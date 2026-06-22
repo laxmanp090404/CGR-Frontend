@@ -1,0 +1,99 @@
+<app-dashboard-shell [navItems]="navItems()" title="Department Complaints">
+  <div class="page-header-row">
+    <div>
+      <h2 class="section-title">Department Complaints</h2>
+      <p class="section-desc">Complaints raised in your department by other employees.</p>
+    </div>
+    <button class="btn btn-primary" id="raise-complaint-btn" (click)="raiseComplaint()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      File a Complaint
+    </button>
+  </div>
+
+  <!-- Reusable generic filter component -->
+  <app-complaint-filter
+    [showRaisedByMeFilter]="false"
+    (filterChange)="onFilterChanged($event)"
+  />
+
+  @if (isLoading()) {
+    <app-dashboard-skeleton [cardCount]="0" [chartCount]="0" />
+  } @else if (result(); as data) {
+    @if (data.items.length === 0) {
+      <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+        <h3>No complaints found</h3>
+        <p>No complaints match the selected filter criteria or no department complaints have been raised.</p>
+      </div>
+    } @else {
+      <!-- Table -->
+      <div class="table-card">
+        <div class="table-wrapper">
+          <table class="data-table" id="dept-complaints-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Department</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Raised By</th>
+                <th>Handler</th>
+                <th>Filed On</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of data.items; track item.complaintId) {
+                <tr>
+                  <td class="id-cell">{{ item.complaintId }}</td>
+                  <td class="title-cell">
+                    <a [routerLink]="['/dept-head/complaints', item.complaintId]" class="complaint-link">
+                      {{ item.complaintTitle }}
+                    </a>
+                  </td>
+                  <td>{{ item.categoryName }}</td>
+                  <td>{{ item.departmentName }}</td>
+                  <td>
+                    <span class="priority-badge" [ngClass]="getPriorityClass(item.priorityName)">
+                      {{ item.priorityName }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status-badge" [ngClass]="getStatusClass(item.statusName)">
+                      {{ item.statusName }}
+                    </span>
+                  </td>
+                  <td>{{ item.raisedByName ?? '—' }}</td>
+                  <td>{{ item.currentHandlerName ?? '—' }}</td>
+                  <td>{{ item.createdAt | date: 'dd-MM-yyyy HH:mm' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (data.totalPages > 1) {
+          <div class="pagination">
+            <button class="page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)" id="prev-page-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            @for (p of pages; track p) {
+              <button class="page-btn" [class.page-btn--active]="p === currentPage()" (click)="goToPage(p)" [id]="'page-' + p">
+                {{ p }}
+              </button>
+            }
+            <button class="page-btn" [disabled]="currentPage() === data.totalPages" (click)="goToPage(currentPage() + 1)" id="next-page-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+        }
+
+        <div class="table-meta">
+          Showing {{ data.items.length }} of {{ data.totalCount }} complaints &mdash; Page {{ data.page }} of {{ data.totalPages }}
+        </div>
+      </div>
+    }
+  }
+</app-dashboard-shell>

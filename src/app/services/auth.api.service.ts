@@ -51,7 +51,12 @@ export class TokenStorageService {
   getRole(): Role | null {
     return this._session()?.role ?? null;
   }
-
+  getUserName(): string | null {
+    return this._session()?.employeeName ?? null;
+  }
+  getEmployeeId(): number | null {
+    return this._session()?.employeeId ?? null;
+  }
   isAuthenticated(): boolean {
     return !!this._session()?.token;
   }

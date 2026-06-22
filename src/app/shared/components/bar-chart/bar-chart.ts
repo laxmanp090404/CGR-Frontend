@@ -27,6 +27,8 @@ export class BarChartComponent implements OnDestroy {
   readonly title = input<string>('');
   readonly layout = input<'vertical' | 'horizontal'>('vertical');
   readonly colorVariant = input<'primary' | 'secondary' | 'success' | 'error'>('primary');
+  /** Optional per-bar hex color array. When provided, overrides colorVariant. */
+  readonly colors = input<string[] | null>(null);
 
   @ViewChild('chartCanvas', { static: true }) chartCanvas!: ElementRef<HTMLCanvasElement>;
 
@@ -65,9 +67,14 @@ export class BarChartComponent implements OnDestroy {
     if (!this.chart) return;
     const labels = list.map((item) => item.label);
     const dataPoints = list.map((item) => item.value);
+    const perBarColors = this.colors();
 
     this.chart.data.labels = labels;
     this.chart.data.datasets[0].data = dataPoints;
+    if (perBarColors && perBarColors.length) {
+      this.chart.data.datasets[0].backgroundColor = perBarColors;
+      this.chart.data.datasets[0].borderColor = perBarColors;
+    }
     this.chart.update();
   }
 
@@ -83,7 +90,8 @@ export class BarChartComponent implements OnDestroy {
     const list = this.data() || [];
     const labels = list.map((item) => item.label);
     const dataPoints = list.map((item) => item.value);
-    const color = this.getThemeColor();
+    const perBarColors = this.colors();
+    const color = perBarColors && perBarColors.length ? perBarColors : this.getThemeColor();
     const isHorizontal = this.layout() === 'horizontal';
 
     return {

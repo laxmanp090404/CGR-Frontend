@@ -1,0 +1,84 @@
+<app-dashboard-shell [navItems]="navItems()" title="My Work Queue">
+  <div class="page-header-row">
+    <div>
+      <h2 class="section-title">My Work Queue</h2>
+      <p class="section-desc">Complaints currently assigned to you for handling.</p>
+    </div>
+    <button class="btn btn-secondary" id="refresh-queue-btn" (click)="loadQueue()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+      Refresh
+    </button>
+  </div>
+
+  @if (isLoading()) {
+    <app-dashboard-skeleton [cardCount]="0" [chartCount]="0" />
+  } @else if (result(); as data) {
+    @if (data.items.length === 0) {
+      <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        <h3>Work queue is empty</h3>
+        <p>You have no complaints currently assigned to you.</p>
+      </div>
+    } @else {
+      <div class="table-card">
+        <div class="table-wrapper">
+          <table class="data-table" id="work-queue-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Department</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Filed On</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of data.items; track item.complaintId) {
+                <tr>
+                  <td class="id-cell">{{ item.complaintId }}</td>
+                  <td class="title-cell">{{ item.complaintTitle }}</td>
+                  <td>{{ item.categoryName }}</td>
+                  <td>{{ item.departmentName }}</td>
+                  <td>
+                    <span class="priority-badge" [ngClass]="getPriorityClass(item.priorityName)">
+                      {{ item.priorityName }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status-badge" [ngClass]="getStatusClass(item.statusName)">
+                      {{ item.statusName }}
+                    </span>
+                  </td>
+                  <td>{{ item.createdAt | date: 'dd MMM yyyy' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (data.totalPages > 1) {
+          <div class="pagination">
+            <button class="page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)" id="prev-queue-page-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            @for (p of pages; track p) {
+              <button class="page-btn" [class.page-btn--active]="p === currentPage()" (click)="goToPage(p)" [id]="'queue-page-' + p">
+                {{ p }}
+              </button>
+            }
+            <button class="page-btn" [disabled]="currentPage() === data.totalPages" (click)="goToPage(currentPage() + 1)" id="next-queue-page-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+        }
+
+        <div class="table-meta">
+          Showing {{ data.items.length }} of {{ data.totalCount }} complaints &mdash; Page {{ data.page }} of {{ data.totalPages }}
+        </div>
+      </div>
+    }
+  }
+</app-dashboard-shell>

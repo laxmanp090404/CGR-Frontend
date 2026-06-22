@@ -1,0 +1,241 @@
+<app-dashboard-shell [navItems]="navItems()" title="Complaint Details">
+  <!-- Back navigation and title -->
+  <div class="detail-header">
+    <button class="btn-back" (click)="goBack()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      Back to List
+    </button>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <svg class="spinner" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-linecap="round"></circle>
+      </svg>
+      Loading complaint details...
+    </div>
+  } @else if (complaint(); as c) {
+    <div class="detail-layout">
+      <!-- Main Info & Timeline Section -->
+      <div class="detail-main-col">
+        <!-- Title & Description card -->
+        <div class="info-card">
+          <div class="info-card__header">
+            <span class="case-id">Case #{{ c.complaintId }}</span>
+            <h2 class="complaint-title">{{ c.complaintTitle }}</h2>
+          </div>
+          <div class="info-card__body">
+            <h3 class="section-heading">Description</h3>
+            <p class="description-text">{{ c.complaintDescription }}</p>
+
+            <!-- Attachments -->
+            @if (c.attachments && c.attachments.length > 0) {
+              <div class="attachments-section">
+                <h3 class="section-heading">Attachments</h3>
+                <div class="attachments-grid">
+                  @for (att of c.attachments; track att.attachmentId) {
+                    <a [href]="getAttachmentUrl(att.filePath)" target="_blank" class="attachment-file-card">
+                      <svg class="file-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                      </svg>
+                      <div class="file-info">
+                        <span class="file-name">{{ att.originalFileName }}</span>
+                        <span class="file-size">{{ (att.fileSizeBytes / 1024) | number:'1.0-0' }} KB</span>
+                      </div>
+                    </a>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- History Timeline -->
+        <div class="info-card">
+          <div class="info-card__header">
+            <h3 class="card-heading">Resolution History & Timeline</h3>
+          </div>
+          <div class="info-card__body">
+            <div class="timeline-container">
+              @if (history().length === 0) {
+                <p class="text-muted">No history logs recorded for this complaint.</p>
+              } @else {
+                <div class="timeline">
+                  @for (h of history(); track h.complaintHistoryId; let last = $last) {
+                    <div class="timeline-item">
+                      <!-- Left Line Connector -->
+                      <div class="timeline-item__badge-connector">
+                        <div class="timeline-circle" [style.background-color]="STATUS_CONFIG[h.newStatusId]?.textColor || '#455e91'"></div>
+                        @if (!last) {
+                          <div class="timeline-line"></div>
+                        }
+                      </div>
+
+                      <!-- Content Block -->
+                      <div class="timeline-item__content">
+                        <div class="timeline-meta-row">
+                          <div class="status-transition">
+                            @if (h.oldStatusName) {
+                              <span class="status-pill status-pill--old" [style.color]="STATUS_CONFIG[h.oldStatusId]?.textColor" [style.background-color]="STATUS_CONFIG[h.oldStatusId]?.bgColor">
+                                {{ h.oldStatusName }}
+                              </span>
+                              <svg class="arrow-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                <polyline points="12 5 19 12 12 19"></polyline>
+                              </svg>
+                            }
+                            <span class="status-pill" [style.color]="STATUS_CONFIG[h.newStatusId]?.textColor" [style.background-color]="STATUS_CONFIG[h.newStatusId]?.bgColor">
+                              {{ h.newStatusName }}
+                            </span>
+                          </div>
+                          <span class="action-time">{{ h.actionAt | date: 'dd-MM-yyyy HH:mm' }}</span>
+                        </div>
+
+                        <!-- Action remarks -->
+                        @if (h.remarks) {
+                          <p class="action-remarks">"{{ h.remarks }}"</p>
+                        }
+
+                        <!-- Action details (actor & handler changes) -->
+                        <div class="action-actor-details">
+                          <span class="actor-name">
+                            Action by: <strong>{{ h.actionByEmployeeName }}</strong> ({{ h.actionByEmployeeRole }})
+                          </span>
+                          @if (h.oldHandlerEmployeeName || h.newHandlerEmployeeName) {
+                            <span class="handler-change">
+                              Handler: 
+                              @if (h.oldHandlerEmployeeName) {
+                                {{ h.oldHandlerEmployeeName }}
+                              } @else {
+                                <em>None</em>
+                              }
+                              &rarr; 
+                              @if (h.newHandlerEmployeeName) {
+                                <strong>{{ h.newHandlerEmployeeName }}</strong>
+                              } @else {
+                                <em>Unassigned</em>
+                              }
+                            </span>
+                          }
+                          @if (h.escalationLevel > 0) {
+                            <span class="escalation-badge">Escalation Level {{ h.escalationLevel }}</span>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar Metadata Panel -->
+      <div class="detail-sidebar-col">
+        <!-- Status Card -->
+        <div class="meta-card">
+          <div class="meta-row">
+            <span class="meta-label">Status</span>
+            <span class="status-badge" [ngClass]="getStatusClass(c.statusName)">
+              {{ c.statusName }}
+            </span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Priority</span>
+            <span class="priority-badge" [ngClass]="getPriorityClass(c.priorityName)">
+              {{ c.priorityName }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Assignment and category info -->
+        <div class="meta-card">
+          <h3 class="meta-card-title">Case Information</h3>
+          
+          <div class="meta-field">
+            <span class="meta-label">Department</span>
+            <span class="meta-value">{{ c.departmentName }}</span>
+          </div>
+
+          <div class="meta-field">
+            <span class="meta-label">Category</span>
+            <span class="meta-value">{{ c.categoryName }}</span>
+          </div>
+
+          <div class="meta-field">
+            <span class="meta-label">Raised By</span>
+            <span class="meta-value">{{ c.raisedByEmployeeName }}</span>
+          </div>
+
+          <div class="meta-field">
+            <span class="meta-label">Current Handler</span>
+            <span class="meta-value">{{ c.currentHandlerEmployeeName ?? 'Unassigned' }}</span>
+          </div>
+
+          @if (c.escalationDueAt) {
+            <div class="meta-field">
+              <span class="meta-label">Escalation Deadline</span>
+              <span class="meta-value time-critical">{{ c.escalationDueAt | date: 'dd-MM-yyyy HH:mm' }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Dates Card -->
+        <div class="meta-card">
+          <h3 class="meta-card-title">Timestamps</h3>
+          
+          <div class="meta-field">
+            <span class="meta-label">Filed On</span>
+            <span class="meta-value">{{ c.createdAt | date: 'dd-MM-yyyy HH:mm' }}</span>
+          </div>
+
+          <div class="meta-field">
+            <span class="meta-label">Last Updated</span>
+            <span class="meta-value">{{ c.updatedAt | date: 'dd-MM-yyyy HH:mm' }}</span>
+          </div>
+
+          @if (c.resolvedAt) {
+            <div class="meta-field">
+              <span class="meta-label">Resolved On</span>
+              <span class="meta-value">{{ c.resolvedAt | date: 'dd-MM-yyyy HH:mm' }}</span>
+            </div>
+          }
+
+          @if (c.closedAt) {
+            <div class="meta-field">
+              <span class="meta-label">Closed On</span>
+              <span class="meta-value">{{ c.closedAt | date: 'dd-MM-yyyy HH:mm' }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Escalation Details -->
+        @if (escalations().length > 0) {
+          <div class="meta-card">
+            <h3 class="meta-card-title text-critical">Escalations Log</h3>
+            <div class="escalation-log-list">
+              @for (esc of escalations(); track esc.escalationId) {
+                <div class="escalation-log-item">
+                  <div class="esc-header">
+                    <span class="esc-level-badge">Level {{ esc.escalationLevel }}</span>
+                    <span class="esc-time">{{ esc.escalatedAt | date: 'dd-MM-yyyy HH:mm' }}</span>
+                  </div>
+                  <p class="esc-reason">"{{ esc.reason }}"</p>
+                  <div class="esc-footer">
+                    <span>By: {{ esc.escalatedByEmployeeName }}</span>
+                    <span>To: {{ esc.escalatedToEmployeeName }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</app-dashboard-shell>

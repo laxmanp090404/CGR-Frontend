@@ -1,19 +1,22 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
 import { AnalyticsService } from '../../../services/analytics.service';
 import { ToastService } from '../../../shared/services/toast.service';
-import {
-  DepartmentDashboardDto,
-  MyDashboardDto,
-} from '../../../models/analytics.model';
+import { DepartmentDashboardDto } from '../../../models/analytics.model';
 import { DashboardShellComponent, NavItem } from '../../../shared/components/dashboard-shell/dashboard-shell';
 import { KpiCardComponent } from '../../../shared/components/kpi-card/kpi-card';
 import { StatusPieChartComponent } from '../../../shared/components/status-pie-chart/status-pie-chart';
 import { BarChartComponent, BarChartItem } from '../../../shared/components/bar-chart/bar-chart';
 import { DashboardSkeletonComponent } from '../../../shared/components/dashboard-skeleton/dashboard-skeleton';
+
+const PRIORITY_COLORS: Record<string, string> = {
+  low: '#00ac46',
+  medium: '#fdc500',
+  high: '#fd8c00',
+  critical: '#dc0000',
+};
 
 @Component({
   selector: 'app-deptheaddashboard',
@@ -32,15 +35,14 @@ import { DashboardSkeletonComponent } from '../../../shared/components/dashboard
 export class Deptheaddashboard {
   private readonly analyticsService = inject(AnalyticsService);
   private readonly toast = inject(ToastService);
-  private readonly router = inject(Router);
 
   readonly isLoading = signal(true);
 
   readonly deptData = signal<DepartmentDashboardDto | null>(null);
-  readonly myData = signal<MyDashboardDto | null>(null);
 
   readonly topCatsChartData = signal<BarChartItem[]>([]);
   readonly priorityChartData = signal<BarChartItem[]>([]);
+  readonly priorityColors = signal<string[]>([]);
 
   readonly escalationRate = signal<number>(0);
 
@@ -48,7 +50,8 @@ export class Deptheaddashboard {
     { label: 'Dashboard', route: '/dept-head/dashboard', icon: 'dashboard' },
     { label: 'Raise a Complaint', route: '/dept-head/raise-complaint', icon: 'raise' },
     { label: 'My Filed Complaints', route: '/dept-head/my-filed-complaints', icon: 'requests' },
-    { label: 'Analytics', route: '/dept-head/analytics', icon: 'chart' },
+    { label: 'Department Complaints', route: '/dept-head/department-complaints', icon: 'departments' },
+    { label: 'My Work Queue', route: '/dept-head/my-work-queue', icon: 'work-queue' },
   ]);
 
   constructor() {
@@ -59,16 +62,12 @@ export class Deptheaddashboard {
     this.isLoading.set(true);
     forkJoin({
       deptBoards: this.analyticsService.getDepartmentDashboard(),
-      my: this.analyticsService.getMyDashboard(),
       topCats: this.analyticsService.getTopCategories(5),
       summary: this.analyticsService.getComplaintSummary(),
     }).subscribe({
       next: (res) => {
-        this.myData.set(res.my);
-
         if (res.deptBoards && res.deptBoards.length > 0) {
-          const dept = res.deptBoards[0];
-          this.deptData.set(dept);
+          this.deptData.set(res.deptBoards[0]);
         } else {
           this.toast.error('Department data unavailable.');
         }
@@ -81,12 +80,16 @@ export class Deptheaddashboard {
           }))
         );
 
-        // Map priorities
-        this.priorityChartData.set(
-          res.summary.byPriority.map((p) => ({
-            label: p.priorityName,
-            value: p.count,
-          }))
+        // Map priorities with colour array
+        const priorityItems = res.summary.byPriority.map((p) => ({
+          label: p.priorityName,
+          value: p.count,
+        }));
+        this.priorityChartData.set(priorityItems);
+        this.priorityColors.set(
+          priorityItems.map(
+            (p) => PRIORITY_COLORS[p.label.toLowerCase()] ?? '#455e91'
+          )
         );
 
         // Calculate escalation rate
@@ -104,10 +107,6 @@ export class Deptheaddashboard {
         this.isLoading.set(false);
       },
     });
-  }
-
-  raiseComplaint(): void {
-    this.router.navigate(['/dept-head/raise-complaint']);
   }
 
   getSlaClass(percent: number | null | undefined): string {

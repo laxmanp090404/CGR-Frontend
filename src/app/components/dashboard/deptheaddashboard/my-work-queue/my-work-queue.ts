@@ -1,0 +1,86 @@
+import { Component, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+import { ComplaintService } from '../../../../services/complaint.service';
+import { ToastService } from '../../../../shared/services/toast.service';
+import { ComplaintDashboardDto, PagedResultDto } from '../../../../models/complaint.model';
+import { DashboardShellComponent, NavItem } from '../../../../shared/components/dashboard-shell/dashboard-shell';
+import { DashboardSkeletonComponent } from '../../../../shared/components/dashboard-skeleton/dashboard-skeleton';
+
+@Component({
+  selector: 'app-my-work-queue',
+  standalone: true,
+  imports: [CommonModule, DashboardShellComponent, DashboardSkeletonComponent],
+  templateUrl: './my-work-queue.html',
+  styleUrl: './my-work-queue.scss',
+})
+export class MyWorkQueueComponent {
+  private readonly complaintService = inject(ComplaintService);
+  private readonly toast = inject(ToastService);
+
+  readonly isLoading = signal(true);
+  readonly result = signal<PagedResultDto<ComplaintDashboardDto> | null>(null);
+  readonly currentPage = signal(1);
+  readonly pageSize = signal(10);
+
+  readonly navItems = signal<NavItem[]>([
+    { label: 'Dashboard', route: '/dept-head/dashboard', icon: 'dashboard' },
+    { label: 'Raise a Complaint', route: '/dept-head/raise-complaint', icon: 'raise' },
+    { label: 'My Filed Complaints', route: '/dept-head/my-filed-complaints', icon: 'requests' },
+    { label: 'Department Complaints', route: '/dept-head/department-complaints', icon: 'departments' },
+    { label: 'My Work Queue', route: '/dept-head/my-work-queue', icon: 'work-queue' },
+  ]);
+
+  constructor() {
+    this.loadQueue();
+  }
+
+  loadQueue(): void {
+    this.isLoading.set(true);
+    this.complaintService
+      .getMyWorkQueue(this.currentPage(), this.pageSize())
+      .subscribe({
+        next: (res) => {
+          this.result.set(res);
+          this.isLoading.set(false);
+        },
+        error: () => {
+          this.toast.error('Failed to load work queue.');
+          this.isLoading.set(false);
+        },
+      });
+  }
+
+  goToPage(page: number): void {
+    const total = this.result()?.totalPages ?? 1;
+    if (page < 1 || page > total) return;
+    this.currentPage.set(page);
+    this.loadQueue();
+  }
+
+  getStatusClass(status: string): string {
+    const s = status.toLowerCase();
+    if (s.includes('open') || s.includes('submitted')) return 'badge--open';
+    if (s.includes('progress')) return 'badge--progress';
+    if (s.includes('resolved')) return 'badge--resolved';
+    if (s.includes('closed')) return 'badge--closed';
+    if (s.includes('rejected')) return 'badge--rejected';
+    if (s.includes('escalated')) return 'badge--escalated';
+    return 'badge--neutral';
+  }
+
+  getPriorityClass(priority: string): string {
+    switch (priority.toLowerCase()) {
+      case 'critical': return 'priority--critical';
+      case 'high': return 'priority--high';
+      case 'medium': return 'priority--medium';
+      case 'low': return 'priority--low';
+      default: return '';
+    }
+  }
+
+  get pages(): number[] {
+    const total = this.result()?.totalPages ?? 1;
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+}

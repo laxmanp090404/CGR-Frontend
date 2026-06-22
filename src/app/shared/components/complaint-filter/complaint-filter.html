@@ -1,0 +1,103 @@
+<div class="filter-card">
+  <div class="filter-grid">
+    <!-- Search Query -->
+    <div class="filter-item search-box">
+      <label for="search" class="filter-label">Search</label>
+      <div class="search-input-wrapper">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="search" placeholder="Search by title, author, handler..."
+          class="form-control filter-input" [ngModel]="localSearch()"
+          (ngModelChange)="localSearch.set($event); onFilterChange()" />
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="filter-item">
+      <label for="status" class="filter-label">Status</label>
+      <select id="status" class="form-select filter-input" [ngModel]="localStatusId()"
+        (ngModelChange)="localStatusId.set($event); onFilterChange()">
+        <option [value]="null">All Statuses</option>
+        @for (s of statuses(); track s.statusId) {
+        <option [value]="s.statusId">{{ s.statusName }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Priority -->
+    <div class="filter-item">
+      <label for="priority" class="filter-label">Priority</label>
+      <select id="priority" class="form-select filter-input" [ngModel]="localPriorityId()"
+        (ngModelChange)="localPriorityId.set($event); onFilterChange()">
+        <option [value]="null">All Priorities</option>
+        @for (p of priorities(); track p.priorityId) {
+        <option [value]="p.priorityId">{{ p.priorityName }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Department (Conditional) -->
+    @if (showDepartmentFilter()) {
+    <div class="filter-item">
+      <label for="department" class="filter-label">Department</label>
+      <select id="department" class="form-select filter-input" [ngModel]="localDepartmentId()"
+        (ngModelChange)="localDepartmentId.set($event); localCategoryId.set(null); onFilterChange()">
+        <option [value]="null">All Departments</option>
+        @for (d of departments(); track d.departmentId) {
+        <option [value]="d.departmentId">{{ d.departmentName }}</option>
+        }
+      </select>
+    </div>
+    }
+
+    <!-- Category (Conditional) -->
+    @if (showCategoryFilter()) {
+    <div class="filter-item">
+      <label for="category" class="filter-label">Category</label>
+      <select id="category" class="form-select filter-input" [ngModel]="localCategoryId()"
+        (ngModelChange)="localCategoryId.set($event); onFilterChange()">
+        <option [value]="null">All Categories</option>
+        @for (c of filteredCategories(); track c.categoryId) {
+        <option [value]="c.categoryId">{{ c.categoryName }}</option>
+        }
+      </select>
+    </div>
+    }
+  </div>
+
+  <div class="filter-actions-row">
+    <div class="filter-actions-left">
+      <!-- Raised By Me Checkbox (Conditional) -->
+      @if (showRaisedByMeFilter()) {
+      <label class="checkbox-label" for="raisedByMe">
+        <input type="checkbox" id="raisedByMe" class="checkbox-input" [ngModel]="localRaisedByMe()"
+          (ngModelChange)="localRaisedByMe.set($event); onFilterChange()" />
+        <span class="checkbox-text">Raised by me</span>
+      </label>
+      }
+    </div>
+
+    <div class="filter-actions-right">
+      <!-- Page Size Selector -->
+      <div class="page-size-container">
+        <label for="pageSize" class="page-size-label">Page Size:</label>
+        <input id="pageSize" type="number" min="1" class="form-control page-size-input" [ngModel]="localPageSize()"
+          (ngModelChange)="onPageSizeChange($event)" />
+      </div>
+
+      <!-- Reset Button -->
+      <button class="btn-reset" (click)="resetFilters()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"></path>
+          <path d="M1 20v-6h6"></path>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        Reset Filters
+      </button>
+    </div>
+  </div>
+</div>

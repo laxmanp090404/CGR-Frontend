@@ -50,7 +50,7 @@
             <h3 class="chart-card__title">Priority Distribution</h3>
           </div>
           <div class="chart-card__body">
-            <app-bar-chart [data]="priorityChartData()" title="Complaints" layout="vertical" colorVariant="secondary"></app-bar-chart>
+            <app-bar-chart [data]="priorityChartData()" title="Complaints" layout="vertical" [colors]="priorityColors()"></app-bar-chart>
           </div>
         </div>
 
@@ -70,39 +70,6 @@
           </div>
         </div>
       </div>
-    }
-
-    <!-- SECTION 2: MY FILLED COMPLAINTS -->
-    <div class="dashboard-header-row mt-8">
-      <h2 class="section-title">My Filed Complaints</h2>
-      <button class="btn btn-primary" (click)="raiseComplaint()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        File a Complaint
-      </button>
-    </div>
-
-    @if (myData(); as my) {
-      <div class="kpi-grid">
-        <app-kpi-card label="Total Raised" [value]="my.totalRaised" icon="total" colorVariant="primary"></app-kpi-card>
-        <app-kpi-card label="Open" [value]="my.openComplaints" icon="open" colorVariant="warning"></app-kpi-card>
-        <app-kpi-card label="Resolved" [value]="my.resolvedComplaints" icon="resolved" colorVariant="success"></app-kpi-card>
-        <app-kpi-card label="Closed" [value]="my.closedComplaints" icon="resolved" colorVariant="success"></app-kpi-card>
-        <app-kpi-card label="Rejected" [value]="my.rejectedComplaints" icon="rejected" colorVariant="danger"></app-kpi-card>
-        <app-kpi-card label="Externally Escalated" [value]="my.externallyEscalatedComplaints" icon="overdue" colorVariant="danger"></app-kpi-card>
-      </div>
-
-      @if (my.totalRaised > 0) {
-        <div class="charts-row">
-          <div class="chart-card max-w-md">
-            <div class="chart-card__header">
-              <h3 class="chart-card__title">Raised Status Breakdown</h3>
-            </div>
-            <div class="chart-card__body">
-              <app-status-pie-chart [data]="my.statusBreakdown"></app-status-pie-chart>
-            </div>
-          </div>
-        </div>
-      }
     }
   }
 </app-dashboard-shell>
