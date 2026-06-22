@@ -2,14 +2,14 @@
 // Auth Models — all authentication-related interfaces & types
 // ─────────────────────────────────────────────────────────────
 
-export type Role = 'ADMIN' | 'EMPLOYEE' | 'GRO' | 'DEPT_HEAD';
+export type Role = 'ADMIN' | 'EMPLOYEE' | 'GRO' | 'DEPARTMENT_HEAD';
 
 /** Maps each role to its default dashboard route */
 export const ROLE_DASHBOARD_ROUTE: Record<Role, string> = {
   EMPLOYEE:  '/employee/dashboard',
   GRO:       '/gro/dashboard',
   ADMIN:     '/admin/dashboard',
-  DEPT_HEAD: '/dept-head/dashboard',
+  DEPARTMENT_HEAD: '/dept-head/dashboard',
 };
 
 // ── Login ──────────────────────────────────────────────────────

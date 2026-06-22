@@ -13,7 +13,7 @@ export const routes: Routes = [
   { path: 'employee/dashboard', component: Employeedashboard, canActivate: [authGuard, roleGuard], data: { roles: ['EMPLOYEE'] } },
   { path: 'gro/dashboard', component: Grodashboard, canActivate: [authGuard, roleGuard], data: { roles: ['GRO'] } },
   { path: 'admin/dashboard', component: Admindashboard, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
-  { path: 'dept-head/dashboard', component: Deptheaddashboard, canActivate: [authGuard, roleGuard], data: { roles: ['DEPT_HEAD'] } },
+  { path: 'dept-head/dashboard', component: Deptheaddashboard, canActivate: [authGuard, roleGuard], data: { roles: ['DEPARTMENT_HEAD'] } },
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: '**', redirectTo: 'login' },
 ];

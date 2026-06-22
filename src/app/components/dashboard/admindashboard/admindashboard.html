@@ -1,0 +1,85 @@
+<app-dashboard-shell [navItems]="navItems()" title="System Admin Dashboard">
+  @if (isLoading()) {
+    <app-dashboard-skeleton [cardCount]="11" [chartCount]="4" />
+  } @else if (adminData(); as admin) {
+    <div class="dashboard-header-row">
+      <h2 class="section-title">System Overview</h2>
+      <button class="btn btn-secondary" (click)="loadData()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+        Refresh
+      </button>
+    </div>
+
+    <!-- KPI ROW 1: Complaint Volumes -->
+    <h3 class="subsection-title">Complaint Counts</h3>
+    <div class="kpi-grid kpi-grid--6">
+      <app-kpi-card label="Total Complaints" [value]="admin.totalComplaints" icon="total" colorVariant="primary"></app-kpi-card>
+      <app-kpi-card label="Open" [value]="admin.openComplaints" icon="open" colorVariant="warning"></app-kpi-card>
+      <app-kpi-card label="Resolved" [value]="admin.resolvedComplaints" icon="resolved" colorVariant="success"></app-kpi-card>
+      <app-kpi-card label="Closed" [value]="admin.closedComplaints" icon="resolved" colorVariant="success"></app-kpi-card>
+      <app-kpi-card label="Rejected" [value]="admin.rejectedComplaints" icon="rejected" colorVariant="danger"></app-kpi-card>
+      <app-kpi-card label="Ext. Escalated" [value]="admin.externallyEscalatedComplaints" icon="overdue" colorVariant="danger"></app-kpi-card>
+    </div>
+
+    <!-- KPI ROW 2: Operations & Health -->
+    <h3 class="subsection-title mt-6">Operations & System Health</h3>
+    <div class="kpi-grid kpi-grid--7">
+      <app-kpi-card label="Overdue" [value]="admin.overdueComplaints" icon="overdue" colorVariant="danger"></app-kpi-card>
+      <app-kpi-card label="Complaint Requests" [value]="admin.pendingComplaintRequests" icon="requests" colorVariant="warning"></app-kpi-card>
+      <app-kpi-card label="Role Requests" [value]="admin.pendingRoleRequests" icon="users" colorVariant="warning"></app-kpi-card>
+      <app-kpi-card label="Active Employees" [value]="admin.activeEmployees" icon="users" colorVariant="primary"></app-kpi-card>
+      <app-kpi-card label="Active Departments" [value]="admin.activeDepartments" icon="departments" colorVariant="primary"></app-kpi-card>
+      <app-kpi-card label="Avg. Resolution" [value]="admin.avgResolutionHours !== null ? (admin.avgResolutionHours + 'h') : '—'" icon="overdue" colorVariant="primary"></app-kpi-card>
+      <app-kpi-card label="SLA Compliance %" [value]="admin.slaCompliancePercent !== null ? (admin.slaCompliancePercent + '%') : '—'" icon="sla" [colorVariant]="getSlaClass(admin.slaCompliancePercent) === 'badge--success' ? 'success' : (getSlaClass(admin.slaCompliancePercent) === 'badge--warning' ? 'warning' : 'danger')"></app-kpi-card>
+    </div>
+
+    <!-- CHARTS GRID -->
+    <div class="charts-grid mt-8">
+      <!-- Status Distribution -->
+      <div class="chart-card">
+        <div class="chart-card__header">
+          <h3 class="chart-card__title">Status Distribution</h3>
+        </div>
+        <div class="chart-card__body">
+          <app-status-pie-chart [data]="statusDist()"></app-status-pie-chart>
+        </div>
+      </div>
+
+      <!-- Complaints by Department -->
+      <div class="chart-card">
+        <div class="chart-card__header">
+          <h3 class="chart-card__title">Complaints by Department</h3>
+        </div>
+        <div class="chart-card__body">
+          <app-bar-chart [data]="deptComplaintsChartData()" title="Complaints" layout="horizontal" colorVariant="primary"></app-bar-chart>
+        </div>
+      </div>
+
+      <!-- Complaints by Priority -->
+      <div class="chart-card">
+        <div class="chart-card__header">
+          <h3 class="chart-card__title">Complaints by Priority</h3>
+        </div>
+        <div class="chart-card__body">
+          <app-bar-chart [data]="priorityChartData()" title="Complaints" layout="vertical" colorVariant="secondary"></app-bar-chart>
+        </div>
+      </div>
+
+      <!-- Top Categories -->
+      <div class="chart-card">
+        <div class="chart-card__header">
+          <h3 class="chart-card__title">Top 5 Categories</h3>
+        </div>
+        <div class="chart-card__body">
+          <app-bar-chart [data]="topCatsChartData()" title="Complaints" layout="vertical" colorVariant="success"></app-bar-chart>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEPARTMENT GRID TABLE -->
+    <div class="table-section mt-8">
+      <h3 class="section-subtitle">Department Performance</h3>
+      <app-data-table [columns]="columns" [rows]="deptBoards()"></app-data-table>
+    </div>
+  }
+</app-dashboard-shell>

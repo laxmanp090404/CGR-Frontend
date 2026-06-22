@@ -1,0 +1,59 @@
+<app-dashboard-shell [navItems]="navItems" title="My Complaints Dashboard">
+  @if (isLoading()) {
+    <app-dashboard-skeleton [cardCount]="4" [chartCount]="1" />
+  } @else if (dashboardData(); as data) {
+    <div class="dashboard-header-row">
+      <h2 class="section-title">Overview</h2>
+      <button class="btn btn-primary" (click)="raiseComplaint()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        File a Complaint
+      </button>
+    </div>
+
+    @if (data.totalRaised === 0) {
+      <app-empty-state message="You haven't filed any complaints yet." icon="complaint">
+        <button class="btn btn-primary" (click)="raiseComplaint()">File Your First Complaint</button>
+      </app-empty-state>
+    } @else {
+      <!-- KPI Cards Grid -->
+      <div class="kpi-grid">
+        <app-kpi-card label="Total Filed" [value]="data.totalRaised" icon="total" colorVariant="primary"></app-kpi-card>
+        <app-kpi-card label="Open" [value]="data.openComplaints" icon="open" colorVariant="warning"></app-kpi-card>
+        <app-kpi-card label="Resolved" [value]="data.resolvedComplaints" icon="resolved" colorVariant="success"></app-kpi-card>
+        <app-kpi-card label="Closed" [value]="data.closedComplaints" icon="resolved" colorVariant="success"></app-kpi-card>
+        <app-kpi-card label="Rejected" [value]="data.rejectedComplaints" icon="rejected" colorVariant="danger"></app-kpi-card>
+        <app-kpi-card label="Externally Escalated" [value]="data.externallyEscalatedComplaints" icon="overdue" colorVariant="danger"></app-kpi-card>
+        <app-kpi-card label="Avg. Resolution" [value]="data.avgResolutionHours !== null ? (data.avgResolutionHours + 'h') : '—'" icon="overdue" colorVariant="primary"></app-kpi-card>
+      </div>
+
+      <!-- Donut Chart & Performance Typography -->
+      <div class="charts-row">
+        <!-- Status Distribution Chart -->
+        <div class="chart-card">
+          <div class="chart-card__header">
+            <h3 class="chart-card__title">Status Distribution</h3>
+          </div>
+          <div class="chart-card__body">
+            <app-status-pie-chart [data]="data.statusBreakdown"></app-status-pie-chart>
+          </div>
+        </div>
+
+        <!-- Resolution performance indicator -->
+        <div class="chart-card duration-card">
+          <div class="chart-card__header">
+            <h3 class="chart-card__title">Resolution Speed</h3>
+          </div>
+          <div class="chart-card__body duration-display">
+            <div class="duration-value">
+              {{ data.avgResolutionHours !== null ? (data.avgResolutionHours + 'h') : '—' }}
+            </div>
+            <div class="duration-label">Average Resolution Time</div>
+            <p class="duration-desc text-muted">
+              Calculated based on resolved grievances. Our target response SLA is within 48 business hours.
+            </p>
+          </div>
+        </div>
+      </div>
+    }
+  }
+</app-dashboard-shell>

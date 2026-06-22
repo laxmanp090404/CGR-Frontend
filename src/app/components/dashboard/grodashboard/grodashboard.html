@@ -1,0 +1,80 @@
+<app-dashboard-shell [navItems]="navItems()" title="Grievance Officer Dashboard">
+  @if (isLoading()) {
+    <app-dashboard-skeleton [cardCount]="6" [chartCount]="2" />
+  } @else {
+    <!-- SECTION 1: GRO WORKLOAD -->
+    <div class="dashboard-header-row">
+      <h2 class="section-title">Redressal Workload</h2>
+      <button class="btn btn-secondary" (click)="loadData()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+        Refresh
+      </button>
+    </div>
+
+    @if (groData(); as gro) {
+      <div class="kpi-grid">
+        <app-kpi-card label="Assigned to Me" [value]="gro.assignedToMe" icon="requests" colorVariant="warning"></app-kpi-card>
+        <app-kpi-card label="In Progress" [value]="gro.inProgressByMe" icon="open" colorVariant="primary"></app-kpi-card>
+        <app-kpi-card label="Resolved by Me" [value]="gro.resolvedByMe" icon="resolved" colorVariant="success"></app-kpi-card>
+        <app-kpi-card label="Escalated by Me" [value]="gro.escalatedByMe" icon="rejected" colorVariant="danger"></app-kpi-card>
+        <app-kpi-card label="Overdue" [value]="gro.overdueAssignedToMe" icon="overdue" colorVariant="danger"></app-kpi-card>
+        <app-kpi-card label="Avg. Resolution" [value]="gro.avgResolutionHours !== null ? (gro.avgResolutionHours + 'h') : '—'" icon="overdue" colorVariant="primary"></app-kpi-card>
+      </div>
+
+      <div class="charts-row">
+        <!-- Status Distribution Chart (GRO-handled) -->
+        <div class="chart-card">
+          <div class="chart-card__header">
+            <h3 class="chart-card__title">Handling Status Distribution</h3>
+          </div>
+          <div class="chart-card__body">
+            <app-status-pie-chart [data]="statusDist()"></app-status-pie-chart>
+          </div>
+        </div>
+
+        <!-- Workload breakdown chart -->
+        <div class="chart-card">
+          <div class="chart-card__header">
+            <h3 class="chart-card__title">Workload Summary</h3>
+          </div>
+          <div class="chart-card__body">
+            <app-bar-chart [data]="workloadChartData()" title="Workload Counts" layout="vertical" colorVariant="primary"></app-bar-chart>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- SECTION 2: MY RAISED COMPLAINTS -->
+    <div class="dashboard-header-row mt-8">
+      <h2 class="section-title">My Raised Complaints</h2>
+      <button class="btn btn-primary" (click)="raiseComplaint()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        File a Complaint
+      </button>
+    </div>
+
+    @if (myData(); as my) {
+      <div class="kpi-grid">
+        <app-kpi-card label="Total Raised" [value]="my.totalRaised" icon="total" colorVariant="primary"></app-kpi-card>
+        <app-kpi-card label="Open" [value]="my.openComplaints" icon="open" colorVariant="warning"></app-kpi-card>
+        <app-kpi-card label="Resolved" [value]="my.resolvedComplaints" icon="resolved" colorVariant="success"></app-kpi-card>
+        <app-kpi-card label="Closed" [value]="my.closedComplaints" icon="resolved" colorVariant="success"></app-kpi-card>
+        <app-kpi-card label="Rejected" [value]="my.rejectedComplaints" icon="rejected" colorVariant="danger"></app-kpi-card>
+        <app-kpi-card label="Externally Escalated" [value]="my.externallyEscalatedComplaints" icon="overdue" colorVariant="danger"></app-kpi-card>
+      </div>
+
+      @if (my.totalRaised > 0) {
+        <div class="charts-row">
+          <div class="chart-card max-w-md">
+            <div class="chart-card__header">
+              <h3 class="chart-card__title">Raised Status Breakdown</h3>
+            </div>
+            <div class="chart-card__body">
+              <app-status-pie-chart [data]="my.statusBreakdown"></app-status-pie-chart>
+            </div>
+          </div>
+        </div>
+      }
+    }
+  }
+</app-dashboard-shell>

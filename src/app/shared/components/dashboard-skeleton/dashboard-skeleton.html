@@ -1,0 +1,20 @@
+<div class="skeleton-wrapper">
+  <div class="skeleton-grid-cards">
+    @for (card of cardsArray; track $index) {
+      <div class="skeleton-item skeleton-card">
+        <div class="skeleton-pulse line-sm"></div>
+        <div class="skeleton-pulse value-lg"></div>
+        <div class="skeleton-pulse line-md"></div>
+      </div>
+    }
+  </div>
+
+  <div class="skeleton-grid-charts">
+    @for (chart of chartsArray; track $index) {
+      <div class="skeleton-item skeleton-chart">
+        <div class="skeleton-pulse line-md"></div>
+        <div class="skeleton-pulse chart-placeholder"></div>
+      </div>
+    }
+  </div>
+</div>

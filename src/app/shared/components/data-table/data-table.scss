@@ -1,0 +1,101 @@
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  border: var(--border-subtle);
+  background-color: var(--color-surface-container-lowest);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-family: var(--font-ui);
+  font-size: 13px;
+
+  th {
+    background-color: var(--color-surface-container-low);
+    color: var(--color-on-surface-variant);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 10px 12px;
+    user-select: none;
+    border-bottom: 1px solid #e5e7eb;
+
+    &.sortable {
+      cursor: pointer;
+      &:hover {
+        background-color: var(--color-surface-container);
+        color: var(--color-on-surface);
+      }
+    }
+  }
+
+  td {
+    padding: 8px 12px;
+    border-bottom: var(--border-subtle);
+    color: var(--color-on-surface);
+    vertical-align: middle;
+    line-height: 20px;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  tr:hover td {
+    background-color: #f1f5f9; // Hover blue tint
+  }
+}
+
+.th-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sort-icon {
+  font-size: 11px;
+}
+
+.sort-icon--inactive {
+  opacity: 0.35;
+}
+
+.empty-cell {
+  text-align: center;
+  padding: 24px !important;
+  color: var(--color-outline);
+}
+
+/* Badge classes */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+}
+
+.badge--success {
+  background-color: var(--color-tertiary-fixed);
+  color: var(--color-on-tertiary-fixed-variant);
+}
+
+.badge--warning {
+  background-color: var(--color-secondary-fixed);
+  color: var(--color-on-secondary-fixed-variant);
+}
+
+.badge--danger {
+  background-color: var(--color-error-container);
+  color: var(--color-on-error-container);
+}
+
+.badge--neutral {
+  background-color: var(--color-surface-variant);
+  color: var(--color-on-surface-variant);
+}

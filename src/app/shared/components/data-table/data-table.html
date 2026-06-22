@@ -1,0 +1,59 @@
+<div class="table-container">
+  <table class="data-table">
+    <thead>
+      <tr>
+        @for (col of columns(); track col.key) {
+          <th
+            [class.sortable]="col.sortable !== false"
+            (click)="toggleSort(col)"
+          >
+            <div class="th-content">
+              <span>{{ col.label }}</span>
+              @if (col.sortable !== false) {
+                <span class="sort-icon">
+                  @if (sortBy() === col.key) {
+                    {{ sortDesc() ? ' ⏷' : ' ⏶' }}
+                  } @else {
+                    <span class="sort-icon--inactive"> ↕</span>
+                  }
+                </span>
+              }
+            </div>
+          </th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of sortedRows(); track row) {
+        <tr>
+          @for (col of columns(); track col.key) {
+            <td>
+              @switch (col.type) {
+                @case ('percent') {
+                  <span class="badge" [ngClass]="getSlaClass(row[col.key])">
+                    {{ row[col.key] !== null && row[col.key] !== undefined ? (row[col.key] + '%') : '—' }}
+                  </span>
+                }
+                @case ('duration') {
+                  {{ row[col.key] !== null && row[col.key] !== undefined ? (row[col.key] + 'h') : '—' }}
+                }
+                @case ('number') {
+                  {{ row[col.key] !== null && row[col.key] !== undefined ? row[col.key] : '—' }}
+                }
+                @default {
+                  {{ row[col.key] !== null && row[col.key] !== undefined ? row[col.key] : '—' }}
+                }
+              }
+            </td>
+          }
+        </tr>
+      } @empty {
+        <tr>
+          <td [attr.colspan]="columns().length" class="empty-cell">
+            No rows available.
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
