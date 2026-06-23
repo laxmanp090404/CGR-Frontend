@@ -1,4 +1,4 @@
-import { Component, input, inject, signal } from '@angular/core';
+import { Component, input, inject, signal, HostListener, ElementRef } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { TokenStorageService } from '../../../services/auth.api.service';
@@ -23,16 +23,32 @@ export class DashboardShellComponent {
 
   private readonly tokenStorage = inject(TokenStorageService);
   private readonly router = inject(Router);
+  private readonly elementRef = inject(ElementRef);
 
   readonly session = this.tokenStorage.session;
   readonly isMobileMenuOpen = signal(false);
+  readonly isUserMenuOpen = signal(false);
 
   toggleMobileMenu(): void {
     this.isMobileMenuOpen.update((v) => !v);
   }
 
+  toggleUserMenu(event: MouseEvent): void {
+    event.stopPropagation();
+    this.isUserMenuOpen.update((v) => !v);
+  }
+
   logout(): void {
     this.tokenStorage.clear();
     this.router.navigate(['/login']);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    const userContainer = this.elementRef.nativeElement.querySelector('.header__user-container');
+    if (userContainer && !userContainer.contains(target)) {
+      this.isUserMenuOpen.set(false);
+    }
   }
 }

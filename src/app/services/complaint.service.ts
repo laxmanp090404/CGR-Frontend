@@ -91,4 +91,31 @@ export class ComplaintService {
       dto
     );
   }
+
+  // ── Status Transition Methods ────────────────────────────────────────────
+
+  /** ASSIGNED → IN_PROGRESS. Only current handler. */
+  startProgress(complaintId: number): Observable<void> {
+    return this.http.put<void>(`${this.apiBase}/${complaintId}/start-progress`, {});
+  }
+
+  /** IN_PROGRESS → RESOLVED. Only current handler. Requires resolution remarks. */
+  resolveComplaint(complaintId: number, resolutionRemarks: string): Observable<void> {
+    return this.http.put<void>(`${this.apiBase}/${complaintId}/resolve`, { resolutionRemarks });
+  }
+
+  /** RESOLVED → CLOSED. Only complaint creator. Requires closing remarks. */
+  closeComplaint(complaintId: number, remarks: string): Observable<void> {
+    return this.http.put<void>(`${this.apiBase}/${complaintId}/close`, { remarks });
+  }
+
+  /** RESOLVED / EXTERNALLY_ESCALATED → REOPENED. Only complaint creator. */
+  reopenComplaint(complaintId: number, reopenRemarks: string): Observable<void> {
+    return this.http.put<void>(`${this.apiBase}/${complaintId}/reopen`, { reopenRemarks });
+  }
+
+  /** IN_PROGRESS → ESCALATED. Only GRO or Dept Head. Requires remarks. */
+  escalateComplaint(complaintId: number, remarks: string): Observable<void> {
+    return this.http.put<void>(`${this.apiBase}/${complaintId}/escalate`, { remarks });
+  }
 }

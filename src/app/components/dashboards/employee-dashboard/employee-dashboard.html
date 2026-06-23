@@ -1,4 +1,4 @@
-<app-dashboard-shell [navItems]="navItems" title="My Complaints Dashboard">
+<app-dashboard-shell [navItems]="navItems()" title="My Complaints Dashboard">
   @if (isLoading()) {
     <app-dashboard-skeleton [cardCount]="4" [chartCount]="1" />
   } @else if (dashboardData(); as data) {

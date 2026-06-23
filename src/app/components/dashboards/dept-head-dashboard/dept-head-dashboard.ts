@@ -19,7 +19,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 };
 
 @Component({
-  selector: 'app-deptheaddashboard',
+  selector: 'app-dept-head-dashboard',
   standalone: true,
   imports: [
     CommonModule,
@@ -29,10 +29,10 @@ const PRIORITY_COLORS: Record<string, string> = {
     BarChartComponent,
     DashboardSkeletonComponent,
   ],
-  templateUrl: './deptheaddashboard.html',
-  styleUrl: './deptheaddashboard.scss',
+  templateUrl: './dept-head-dashboard.html',
+  styleUrl: './dept-head-dashboard.scss',
 })
-export class Deptheaddashboard {
+export class DeptHeadDashboardComponent {
   private readonly analyticsService = inject(AnalyticsService);
   private readonly toast = inject(ToastService);
 

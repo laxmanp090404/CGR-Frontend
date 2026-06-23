@@ -1,17 +1,18 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 
-import { ComplaintService } from '../../../../services/complaint.service';
-import { ToastService } from '../../../../shared/services/toast.service';
-import { ComplaintDashboardDto, PagedResultDto, ComplaintFilterParams } from '../../../../models/complaint.model';
-import { DashboardShellComponent, NavItem } from '../../../../shared/components/dashboard-shell/dashboard-shell';
-import { DashboardSkeletonComponent } from '../../../../shared/components/dashboard-skeleton/dashboard-skeleton';
-import { TokenStorageService } from '../../../../services/auth.api.service';
-import { ComplaintFilterComponent } from '../../../../shared/components/complaint-filter/complaint-filter';
+import { ComplaintService } from '../../../services/complaint.service';
+import { ToastService } from '../../../shared/services/toast.service';
+import { ComplaintDashboardDto, PagedResultDto, ComplaintFilterParams } from '../../../models/complaint.model';
+import { DashboardShellComponent, NavItem } from '../../../shared/components/dashboard-shell/dashboard-shell';
+import { DashboardSkeletonComponent } from '../../../shared/components/dashboard-skeleton/dashboard-skeleton';
+import { ComplaintFilterComponent } from '../../../shared/components/complaint-filter/complaint-filter';
+import { TokenStorageService } from '../../../services/auth.api.service';
+import { getNavItems } from '../../../shared/components/dashboard-shell/nav-menu';
 
 @Component({
-  selector: 'app-my-filed-complaints',
+  selector: 'app-department-complaints',
   standalone: true,
   imports: [
     CommonModule,
@@ -20,16 +21,14 @@ import { ComplaintFilterComponent } from '../../../../shared/components/complain
     DashboardSkeletonComponent,
     ComplaintFilterComponent,
   ],
-  templateUrl: './my-filed-complaints.html',
-  styleUrl: './my-filed-complaints.scss',
+  templateUrl: './department-complaints.html',
+  styleUrl: './department-complaints.scss',
 })
-export class MyFiledComplaintsComponent {
+export class DepartmentComplaintsComponent {
   private readonly complaintService = inject(ComplaintService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly tokenStorage = inject(TokenStorageService);
-
-  readonly user = this.tokenStorage.getUserName() ?? 'User';
 
   readonly isLoading = signal(true);
   readonly result = signal<PagedResultDto<ComplaintDashboardDto> | null>(null);
@@ -43,13 +42,10 @@ export class MyFiledComplaintsComponent {
   readonly departmentId = signal<number | null>(null);
   readonly searchQuery = signal<string>('');
 
-  readonly navItems = signal<NavItem[]>([
-    { label: 'Dashboard', route: '/dept-head/dashboard', icon: 'dashboard' },
-    { label: 'Raise a Complaint', route: '/dept-head/raise-complaint', icon: 'raise' },
-    { label: 'My Filed Complaints', route: '/dept-head/my-filed-complaints', icon: 'requests' },
-    { label: 'Department Complaints', route: '/dept-head/department-complaints', icon: 'departments' },
-    { label: 'My Work Queue', route: '/dept-head/my-work-queue', icon: 'work-queue' },
-  ]);
+  readonly navItems = computed<NavItem[]>(() => {
+    const role = this.tokenStorage.getRole();
+    return role ? getNavItems(role) : [];
+  });
 
   constructor() {
     this.loadComplaints();
@@ -66,7 +62,7 @@ export class MyFiledComplaintsComponent {
         this.categoryId(),
         this.departmentId(),
         this.searchQuery(),
-        true // raisedByMe = true for My Filed Complaints
+        false // raisedByMe = false for Department Complaints
       )
       .subscribe({
         next: (res) => {
@@ -74,7 +70,7 @@ export class MyFiledComplaintsComponent {
           this.isLoading.set(false);
         },
         error: () => {
-          this.toast.error('Failed to load complaints.');
+          this.toast.error('Failed to load department complaints.');
           this.isLoading.set(false);
         },
       });
@@ -87,7 +83,7 @@ export class MyFiledComplaintsComponent {
     this.departmentId.set(filters.departmentId);
     this.searchQuery.set(filters.search);
     this.pageSize.set(filters.pageSize);
-    this.currentPage.set(1); // Reset to page 1
+    this.currentPage.set(1); // Reset to page 1 on filter changes
     this.loadComplaints();
   }
 
@@ -99,7 +95,15 @@ export class MyFiledComplaintsComponent {
   }
 
   raiseComplaint(): void {
-    this.router.navigate(['/dept-head/raise-complaint']);
+    const role = this.tokenStorage.getRole();
+    const routeRole = role === 'DEPARTMENT_HEAD' ? 'dept-head' : role?.toLowerCase();
+    this.router.navigate([`/${routeRole}/raise-complaint`]);
+  }
+
+  getComplaintDetailLink(id: number): string[] {
+    const role = this.tokenStorage.getRole();
+    const routeRole = role === 'DEPARTMENT_HEAD' ? 'dept-head' : role?.toLowerCase();
+    return [`/${routeRole}/complaints`, String(id)];
   }
 
   getStatusClass(status: string): string {

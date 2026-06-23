@@ -4,6 +4,8 @@ import { forkJoin } from 'rxjs';
 
 import { AnalyticsService } from '../../../services/analytics.service';
 import { ToastService } from '../../../shared/services/toast.service';
+import { TokenStorageService } from '../../../services/auth.api.service';
+import { getNavItems } from '../../../shared/components/dashboard-shell/nav-menu';
 import {
   AdminDashboardDto,
   StatusDistributionDto,
@@ -17,7 +19,7 @@ import { DataTableComponent, DataTableColumn } from '../../../shared/components/
 import { DashboardSkeletonComponent } from '../../../shared/components/dashboard-skeleton/dashboard-skeleton';
 
 @Component({
-  selector: 'app-admindashboard',
+  selector: 'app-admin-dashboard',
   standalone: true,
   imports: [
     CommonModule,
@@ -28,12 +30,13 @@ import { DashboardSkeletonComponent } from '../../../shared/components/dashboard
     DataTableComponent,
     DashboardSkeletonComponent,
   ],
-  templateUrl: './admindashboard.html',
-  styleUrl: './admindashboard.scss',
+  templateUrl: './admin-dashboard.html',
+  styleUrl: './admin-dashboard.scss',
 })
-export class Admindashboard {
+export class AdminDashboardComponent {
   private readonly analyticsService = inject(AnalyticsService);
   private readonly toast = inject(ToastService);
+  private readonly tokenStorage = inject(TokenStorageService);
 
   readonly isLoading = signal(true);
 
@@ -45,14 +48,7 @@ export class Admindashboard {
   readonly priorityChartData = signal<BarChartItem[]>([]);
   readonly deptComplaintsChartData = signal<BarChartItem[]>([]);
 
-  readonly navItems = signal<NavItem[]>([
-    { label: 'Dashboard', route: '/admin/dashboard', icon: 'dashboard' },
-    { label: 'Complaint Requests', route: '/admin/requests', icon: 'requests', badge: 0 },
-    { label: 'Role Requests', route: '/admin/role-requests', icon: 'profile', badge: 0 },
-    { label: 'Employees', route: '/admin/employees', icon: 'employees' },
-    { label: 'Departments', route: '/admin/departments', icon: 'departments' },
-    { label: 'Analytics', route: '/admin/analytics', icon: 'chart' },
-  ]);
+  readonly navItems = signal<NavItem[]>(getNavItems('ADMIN'));
 
   readonly columns: DataTableColumn[] = [
     { key: 'departmentName', label: 'Department Name', sortable: true, type: 'text' },

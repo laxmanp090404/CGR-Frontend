@@ -1,8 +1,8 @@
-<app-dashboard-shell [navItems]="navItems()" title="My Filed Complaints">
+<app-dashboard-shell [navItems]="navItems()" title="Department Complaints">
   <div class="page-header-row">
     <div>
-      <h2 class="section-title">My Filed Complaints</h2>
-      <p class="section-desc">All complaints you have submitted.</p>
+      <h2 class="section-title">Department Complaints</h2>
+      <p class="section-desc">Complaints raised in your department by other employees.</p>
     </div>
     <button class="btn btn-primary" id="raise-complaint-btn" (click)="raiseComplaint()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -10,6 +10,7 @@
     </button>
   </div>
 
+  <!-- Reusable generic filter component -->
   <app-complaint-filter
     [showRaisedByMeFilter]="false"
     (filterChange)="onFilterChanged($event)"
@@ -21,14 +22,14 @@
     @if (data.items.length === 0) {
       <div class="empty-state">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-        <h3>No complaints filed yet</h3>
-        <p>You haven't filed any complaints. Click "File a Complaint" to get started.</p>
+        <h3>No complaints found</h3>
+        <p>No complaints match the selected filter criteria or no department complaints have been raised.</p>
       </div>
     } @else {
       <!-- Table -->
       <div class="table-card">
         <div class="table-wrapper">
-          <table class="data-table" id="my-complaints-table">
+          <table class="data-table" id="dept-complaints-table">
             <thead>
               <tr>
                 <th>#</th>
@@ -37,6 +38,7 @@
                 <th>Department</th>
                 <th>Priority</th>
                 <th>Status</th>
+                <th>Raised By</th>
                 <th>Handler</th>
                 <th>Filed On</th>
               </tr>
@@ -46,7 +48,7 @@
                 <tr>
                   <td class="id-cell">{{ item.complaintId }}</td>
                   <td class="title-cell">
-                    <a [routerLink]="['/dept-head/complaints', item.complaintId]" class="complaint-link">
+                    <a [routerLink]="getComplaintDetailLink(item.complaintId)" class="complaint-link">
                       {{ item.complaintTitle }}
                     </a>
                   </td>
@@ -62,8 +64,9 @@
                       {{ item.statusName }}
                     </span>
                   </td>
+                  <td>{{ item.raisedByName ?? '—' }}</td>
                   <td>{{ item.currentHandlerName ?? '—' }}</td>
-                  <td>{{ item.createdAt | date: 'dd-MM-yyyy HH:mm' }}</td>
+                  <td>{{ item.createdAt | date: 'dd-MM-yyyy hh:mm a' }}</td>
                 </tr>
               }
             </tbody>
