@@ -6,7 +6,10 @@ import { forkJoin } from 'rxjs';
 import { ComplaintService } from '../../../../services/complaint.service';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { DashboardShellComponent, NavItem } from '../../../../shared/components/dashboard-shell/dashboard-shell';
+import { ComplaintCommentsComponent } from '../../../../shared/components/complaint-comments/complaint-comments';
 import { baseUrl } from '../../../../../environment';
+import { TokenStorageService } from '../../../../services/auth.api.service';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 export interface StatusConfig {
   label: string;
@@ -17,7 +20,7 @@ export interface StatusConfig {
 @Component({
   selector: 'app-complaint-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, DashboardShellComponent],
+  imports: [CommonModule, RouterModule, DashboardShellComponent, ComplaintCommentsComponent],
   templateUrl: './complaint-detail.html',
   styleUrl: './complaint-detail.scss',
 })
@@ -26,12 +29,20 @@ export class ComplaintDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly tokenStorage = inject(TokenStorageService);
+  private readonly sanitizer = inject(DomSanitizer);
 
   readonly isLoading = signal(true);
   readonly complaint = signal<any | null>(null);
   readonly history = signal<any[]>([]);
   readonly escalations = signal<any[]>([]);
   
+  readonly previewAttachment = signal<any | null>(null);
+  readonly previewUrl = signal<string | null>(null);
+  readonly previewUrlSafe = signal<SafeResourceUrl | null>(null);
+  readonly isPreviewLoading = signal(false);
+  readonly previewError = signal<string | null>(null);
+
   readonly apiBaseUrl = baseUrl;
 
   readonly STATUS_CONFIG: Record<number, StatusConfig> = {
@@ -88,9 +99,67 @@ export class ComplaintDetailComponent implements OnInit {
     });
   }
 
-  getAttachmentUrl(filePath: string): string {
-    const cleanedPath = filePath.replace(/\\/g, '/');
-    return `${this.apiBaseUrl}/${cleanedPath}`;
+  openAttachment(att: any): void {
+    this.previewAttachment.set(att);
+    this.isPreviewLoading.set(true);
+    this.previewError.set(null);
+    this.previewUrl.set(null);
+    this.previewUrlSafe.set(null);
+
+    this.complaintService.getAttachmentBlob(att.filePath).subscribe({
+      next: (blob) => {
+        const objectUrl = URL.createObjectURL(blob);
+        this.previewUrl.set(objectUrl);
+        this.previewUrlSafe.set(this.sanitizer.bypassSecurityTrustResourceUrl(objectUrl));
+        this.isPreviewLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to load attachment', err);
+        let errorMsg = 'Failed to load preview.';
+        if (err.status === 403) {
+          errorMsg = 'You are not authorized to view this attachment.';
+        } else if (err.status === 404) {
+          errorMsg = 'Attachment file not found.';
+        }
+        this.previewError.set(errorMsg);
+        this.isPreviewLoading.set(false);
+      }
+    });
+  }
+
+  closePreview(): void {
+    const url = this.previewUrl();
+    if (url) {
+      URL.revokeObjectURL(url);
+    }
+    this.previewAttachment.set(null);
+    this.previewUrl.set(null);
+    this.previewUrlSafe.set(null);
+    this.previewError.set(null);
+  }
+
+  downloadPreview(): void {
+    const url = this.previewUrl();
+    const att = this.previewAttachment();
+    if (url && att) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = att.originalFileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  }
+
+  isImage(mimeType?: string): boolean {
+    if (!mimeType) return false;
+    const type = mimeType.toLowerCase();
+    return type === 'image/png' || type === 'image/jpg' || type === 'image/jpeg';
+  }
+
+  isPdf(mimeType?: string): boolean {
+    if (!mimeType) return false;
+    return mimeType.toLowerCase() === 'application/pdf';
   }
 
   getStatusClass(statusName: string): string {

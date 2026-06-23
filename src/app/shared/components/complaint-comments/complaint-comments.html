@@ -1,0 +1,124 @@
+<div class="cc-panel">
+  <div class="cc-panel__header">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+    <h3 class="cc-panel__title">Comments</h3>
+    @if (!isLoading() && comments().length > 0) {
+      <span class="cc-count">{{ comments().length }}</span>
+    }
+  </div>
+
+  <!-- Loading state -->
+  @if (isLoading()) {
+    <div class="cc-loading">
+      <svg class="cc-spinner" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-linecap="round"></circle>
+      </svg>
+      <span>Loading comments…</span>
+    </div>
+  } @else {
+
+    <!-- Comment list -->
+    <div class="cc-list">
+      @if (comments().length === 0) {
+        <div class="cc-empty">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <p>No comments yet.</p>
+        </div>
+      } @else {
+        @for (c of comments(); track c.commentId) {
+          <div class="cc-item" [class.cc-item--internal]="c.isInternal">
+            <!-- Avatar -->
+            <div class="cc-avatar" [class.cc-avatar--internal]="c.isInternal">
+              {{ initials(c.commentedByName) }}
+            </div>
+
+            <!-- Bubble -->
+            <div class="cc-bubble" [class.cc-bubble--internal]="c.isInternal">
+              <div class="cc-bubble__header">
+                <span class="cc-author">{{ c.commentedByName }}</span>
+                @if (c.isInternal) {
+                  <span class="cc-internal-badge">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    Internal Note
+                  </span>
+                }
+                <span class="cc-time">{{ c.createdAt | date: 'dd MMM yyyy, hh:mm a' }}</span>
+              </div>
+              <p class="cc-text">{{ c.commentText }}</p>
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Compose box -->
+    @if (canComment()) {
+      <div class="cc-compose">
+        <textarea
+          class="cc-textarea"
+          [(ngModel)]="commentText"
+          [ngModel]="commentText()"
+          (ngModelChange)="commentText.set($event)"
+          placeholder="Write a comment…"
+          rows="3"
+          [disabled]="isSubmitting()"
+        ></textarea>
+
+        <div class="cc-compose__footer">
+          @if (canPostInternal()) {
+            <label class="cc-internal-toggle">
+              <input
+                type="checkbox"
+                [checked]="isInternal()"
+                (change)="isInternal.set($any($event.target).checked)"
+                [disabled]="isSubmitting()"
+              />
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              Internal note
+            </label>
+          } @else {
+            <span></span>
+          }
+
+          <button
+            type="button"
+            class="cc-submit"
+            [disabled]="isSubmitting() || !commentText().trim()"
+            (click)="submitComment()"
+          >
+            @if (isSubmitting()) {
+              <svg class="cc-spinner cc-spinner--sm" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-linecap="round"></circle>
+              </svg>
+              Sending…
+            } @else {
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+              Send
+            }
+          </button>
+        </div>
+      </div>
+    } @else {
+      <div class="cc-locked">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        {{ lockedMessage() }}
+      </div>
+    }
+  }
+</div>

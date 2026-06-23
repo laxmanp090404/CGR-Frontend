@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { baseUrl } from '../../environment';
-import { ComplaintDashboardDto, PagedResultDto } from '../models/complaint.model';
+import { ComplaintDashboardDto, ComplaintCommentDto, CreateComplaintCommentDto, PagedResultDto } from '../models/complaint.model';
 
 @Injectable({ providedIn: 'root' })
 export class ComplaintService {
@@ -70,5 +70,25 @@ export class ComplaintService {
 
   getComplaintEscalations(id: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiBase}/${id}/escalations`);
+  }
+
+  getAttachmentBlob(filePath: string): Observable<Blob> {
+    return this.http.get(`${this.apiBase}/attachments`, {
+      params: { filePath },
+      responseType: 'blob'
+    });
+  }
+
+  getComments(complaintId: number): Observable<ComplaintCommentDto[]> {
+    return this.http.get<ComplaintCommentDto[]>(
+      `${baseUrl}/api/ComplaintComment/complaint/${complaintId}`
+    );
+  }
+
+  addComment(complaintId: number, dto: CreateComplaintCommentDto): Observable<ComplaintCommentDto> {
+    return this.http.post<ComplaintCommentDto>(
+      `${baseUrl}/api/ComplaintComment/complaint/${complaintId}`,
+      dto
+    );
   }
 }

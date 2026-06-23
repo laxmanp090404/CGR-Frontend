@@ -27,3 +27,18 @@ export interface ComplaintFilterParams {
   raisedByMe: boolean;
   pageSize: number;
 }
+
+export interface ComplaintCommentDto {
+  commentId: number;
+  complaintId: number;
+  commentText: string;
+  commentedBy: number;
+  commentedByName: string;
+  isInternal: boolean;
+  createdAt: string;
+}
+
+export interface CreateComplaintCommentDto {
+  commentText: string;
+  isInternal: boolean;
+}
