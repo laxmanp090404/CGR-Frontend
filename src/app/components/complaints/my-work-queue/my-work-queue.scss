@@ -1,0 +1,206 @@
+// Shared complaint table & pagination styles (work queue variant)
+.page-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem;
+  }
+
+  .section-desc {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin: 0;
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  color: var(--text-muted);
+  text-align: center;
+
+  svg { opacity: 0.35; }
+
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  p {
+    font-size: 0.875rem;
+    margin: 0;
+    max-width: 360px;
+  }
+}
+
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+
+  thead {
+    background: var(--surface-alt, rgba(255,255,255,0.04));
+  }
+
+  th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 0.875rem 1rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr:hover {
+    background: var(--surface-hover, rgba(255,255,255,0.03));
+    transition: background 0.15s ease;
+  }
+
+  .id-cell {
+    font-weight: 600;
+    color: var(--text-muted);
+    width: 60px;
+  }
+
+  .title-cell {
+    font-weight: 500;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    .complaint-link {
+      color: var(--primary, #455e91);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.15s ease;
+
+      &:hover {
+        color: var(--surface-tint, #455e91);
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &.badge--open      { background: rgba(69,94,145,0.15);  color: #7b9bd6; }
+  &.badge--progress  { background: rgba(254,166,25,0.15);  color: #fea619; }
+  &.badge--resolved  { background: rgba(38,172,82,0.15);   color: #26ac52; }
+  &.badge--closed    { background: rgba(38,172,82,0.1);    color: #1e8c43; }
+  &.badge--rejected  { background: rgba(186,26,26,0.15);   color: #e05555; }
+  &.badge--escalated { background: rgba(156,39,176,0.15);  color: #ce7de0; }
+  &.badge--neutral   { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+}
+
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+
+  &.priority--low      { background: rgba(0,172,70,0.15);  color: #00ac46; }
+  &.priority--medium   { background: rgba(253,197,0,0.15); color: #c49a00; }
+  &.priority--high     { background: rgba(253,140,0,0.15); color: #fd8c00; }
+  &.priority--critical { background: rgba(220,0,0,0.15);   color: #dc0000; }
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--surface-hover, rgba(255,255,255,0.06));
+    color: var(--text-primary);
+  }
+
+  &--active {
+    background: var(--primary, #455e91);
+    border-color: var(--primary, #455e91);
+    color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.table-meta {
+  padding: 0.6rem 1rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  text-align: right;
+}

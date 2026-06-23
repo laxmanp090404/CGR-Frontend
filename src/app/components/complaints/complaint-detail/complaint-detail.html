@@ -1,0 +1,555 @@
+<app-dashboard-shell [navItems]="navItems()" title="Complaint Details">
+  <!-- Back navigation -->
+  <div class="detail-header">
+    <button class="btn-back" (click)="goBack()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      Back to List
+    </button>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <svg class="spinner" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-linecap="round"></circle>
+      </svg>
+      Loading complaint details...
+    </div>
+  } @else if (complaint(); as c) {
+    <div class="detail-layout">
+      <!-- ── Main Column ─────────────────────────────────────────────────── -->
+      <div class="detail-main-col">
+        <!-- Title & Description card -->
+        <div class="info-card">
+          <div class="info-card__header">
+            <span class="case-id">Case #{{ c.complaintId }}</span>
+            <h2 class="complaint-title">{{ c.complaintTitle }}</h2>
+          </div>
+          <div class="info-card__body">
+            <h3 class="section-heading">Description</h3>
+            <p class="description-text">{{ c.complaintDescription }}</p>
+
+            <!-- Attachments -->
+            @if (c.attachments && c.attachments.length > 0) {
+              <div class="attachments-section">
+                <h3 class="section-heading">Attachments</h3>
+                <div class="attachments-grid">
+                  @for (att of c.attachments; track att.attachmentId) {
+                    <button type="button" class="attachment-file-card" (click)="openAttachment(att)">
+                      <svg class="file-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                      </svg>
+                      <div class="file-info">
+                        <span class="file-name">{{ att.originalFileName }}</span>
+                        <span class="file-size">{{ (att.fileSizeBytes / 1024) | number:'1.0-0' }} KB</span>
+                      </div>
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- History Timeline -->
+        <div class="info-card">
+          <div class="info-card__header">
+            <h3 class="card-heading">Resolution History &amp; Timeline</h3>
+          </div>
+          <div class="info-card__body timeline-body">
+            @if (history().length === 0) {
+              <p class="text-muted">No history logs recorded for this complaint.</p>
+            } @else {
+              <div class="timeline">
+                @for (h of history(); track h.complaintHistoryId; let last = $last) {
+                  <div class="timeline-entry" [class.timeline-entry--last]="last">
+                    <!-- Dot + Line -->
+                    <div class="tl-connector">
+                      <div class="tl-dot"
+                           [style.background]="STATUS_CONFIG[h.newStatusId]?.textColor || '#455e91'"
+                           [style.box-shadow]="'0 0 0 4px ' + (STATUS_CONFIG[h.newStatusId]?.bgColor || 'rgba(69,94,145,0.2)')">
+                      </div>
+                      @if (!last) {
+                        <div class="tl-line"
+                             [style.background]="'linear-gradient(to bottom, ' + (STATUS_CONFIG[h.newStatusId]?.textColor || '#455e91') + '55, var(--border))'">
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Card -->
+                    <div class="tl-card"
+                         [style.border-left-color]="STATUS_CONFIG[h.newStatusId]?.textColor || '#455e91'"
+                         [style.background]="STATUS_CONFIG[h.newStatusId]?.bgColor || '#F0F3FF'">
+
+                      <div class="tl-card__header">
+                        <div class="tl-status-row">
+                          @if (h.oldStatusName) {
+                            <span class="tl-status-pill tl-status-pill--old"
+                                  [style.color]="STATUS_CONFIG[h.oldStatusId]?.textColor"
+                                  [style.background]="STATUS_CONFIG[h.oldStatusId]?.bgColor">
+                              {{ h.oldStatusName }}
+                            </span>
+                            <svg class="tl-arrow" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <line x1="5" y1="12" x2="19" y2="12"></line>
+                              <polyline points="12 5 19 12 12 19"></polyline>
+                            </svg>
+                          }
+                          <span class="tl-status-pill tl-status-pill--new"
+                                [style.color]="STATUS_CONFIG[h.newStatusId]?.textColor"
+                                [style.background]="STATUS_CONFIG[h.newStatusId]?.bgColor">
+                            {{ h.newStatusName }}
+                          </span>
+                          @if (h.escalationLevel > 0) {
+                            <span class="tl-escalation-badge">⬆ Level {{ h.escalationLevel }}</span>
+                          }
+                        </div>
+                        <span class="tl-time">{{ h.createdAt | date: 'dd MMM yyyy, hh:mm a' }}</span>
+                      </div>
+
+                      @if (h.remarks) {
+                        <p class="tl-remarks">"{{ h.remarks }}"</p>
+                      }
+
+                      <div class="tl-card__footer">
+                        <span class="tl-actor">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                          </svg>
+                          <strong>{{ h.changedByName }}</strong>
+                          @if (h.changedByName?.toLowerCase() !== 'system' && h.changedByName?.toLowerCase() !== 'escalation engine') {
+                            <span class="tl-role">{{ h.roleNameAtActionTime }}</span>
+                          }
+                        </span>
+                        @if (h.oldHandlerName || h.newHandlerName) {
+                          <span class="tl-handler">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="17 1 21 5 17 9"></polyline>
+                              <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                              <polyline points="7 23 3 19 7 15"></polyline>
+                              <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                            </svg>
+                            Handler:
+                            <em>{{ h.oldHandlerName || 'None' }}</em>
+                            &rarr;
+                            <strong>{{ h.newHandlerName || 'Unassigned' }}</strong>
+                          </span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Sidebar ─────────────────────────────────────────────────────── -->
+      <div class="detail-sidebar-col">
+        <!-- Status & Priority card -->
+        <div class="meta-card">
+          <div class="meta-row">
+            <span class="meta-label">Status</span>
+            <span class="status-badge" [ngClass]="getStatusClass(c.statusName)">
+              {{ c.statusName }}
+            </span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Priority</span>
+            <span class="priority-badge" [ngClass]="getPriorityClass(c.priorityName)">
+              {{ c.priorityName }}
+            </span>
+          </div>
+        </div>
+
+        <!-- ── Actions Card ─────────────────────────────────────────────── -->
+        @if (canStartProgress() || canResolve() || canEscalate() || canClose() || canReopen()) {
+          <div class="actions-card">
+            <div class="actions-card__header">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 11 12 14 22 4"></polyline>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+              </svg>
+              <span>Actions</span>
+            </div>
+            <div class="actions-card__body">
+
+              <!-- Start Progress — no remarks needed -->
+              @if (canStartProgress()) {
+                <div class="action-item">
+                  <div class="action-item__info">
+                    <p class="action-item__label">Start Progress</p>
+                    <p class="action-item__desc">Mark this complaint as In Progress to begin working on it.</p>
+                  </div>
+                  <button
+                    id="btn-start-progress"
+                    class="btn btn-action btn-action--primary"
+                    (click)="onStartProgress()"
+                    [disabled]="isActionLoading()">
+                    @if (isActionLoading()) {
+                      <span class="spinner spinner-sm"></span>
+                    } @else {
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                      </svg>
+                    }
+                    Start Progress
+                  </button>
+                </div>
+              }
+
+              <!-- Resolve -->
+              @if (canResolve()) {
+                <div class="action-item">
+                  <div class="action-item__info">
+                    <p class="action-item__label">Resolve</p>
+                    <p class="action-item__desc">Mark this complaint as resolved and notify the requester.</p>
+                  </div>
+                  <button
+                    id="btn-resolve"
+                    class="btn btn-action btn-action--success"
+                    (click)="openModal('resolve')"
+                    [disabled]="isActionLoading()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Resolve
+                  </button>
+                </div>
+              }
+
+              <!-- Escalate -->
+              @if (canEscalate()) {
+                <div class="action-item">
+                  <div class="action-item__info">
+                    <p class="action-item__label">Escalate</p>
+                    <p class="action-item__desc">Escalate this complaint to the next authority level.</p>
+                  </div>
+                  <button
+                    id="btn-escalate"
+                    class="btn btn-action btn-action--warning"
+                    (click)="openModal('escalate')"
+                    [disabled]="isActionLoading()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="18 15 12 9 6 15"></polyline>
+                    </svg>
+                    Escalate
+                  </button>
+                </div>
+              }
+
+              <!-- Close -->
+              @if (canClose()) {
+                <div class="action-item">
+                  <div class="action-item__info">
+                    <p class="action-item__label">Close Complaint</p>
+                    <p class="action-item__desc">Formally close this complaint after verifying the resolution.</p>
+                  </div>
+                  <button
+                    id="btn-close"
+                    class="btn btn-action btn-action--neutral"
+                    (click)="openModal('close')"
+                    [disabled]="isActionLoading()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="9" y1="9" x2="15" y2="15"></line>
+                      <line x1="15" y1="9" x2="9" y2="15"></line>
+                    </svg>
+                    Close
+                  </button>
+                </div>
+              }
+
+              <!-- Reopen -->
+              @if (canReopen()) {
+                <div class="action-item">
+                  <div class="action-item__info">
+                    <p class="action-item__label">Reopen</p>
+                    <p class="action-item__desc">
+                      Reopen this complaint if the issue persists.
+                      @if ((c.reopenedCount ?? 0) > 0) {
+                        <span class="reopen-count-badge">{{ c.reopenedCount }}/3 reopens used</span>
+                      }
+                    </p>
+                  </div>
+                  <button
+                    id="btn-reopen"
+                    class="btn btn-action btn-action--danger"
+                    (click)="openModal('reopen')"
+                    [disabled]="isActionLoading()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="1 4 1 10 7 10"></polyline>
+                      <path d="M3.51 15a9 9 0 1 0 .49-3.71"></path>
+                    </svg>
+                    Reopen
+                  </button>
+                </div>
+              }
+
+            </div>
+          </div>
+        }
+
+        <!-- Case Information -->
+        <div class="meta-card">
+          <h3 class="meta-card-title">Case Information</h3>
+
+          <div class="meta-field">
+            <span class="meta-label">Department</span>
+            <span class="meta-value">{{ c.departmentName }}</span>
+          </div>
+
+          <div class="meta-field">
+            <span class="meta-label">Category</span>
+            <span class="meta-value">{{ c.categoryName }}</span>
+          </div>
+
+          <div class="meta-field">
+            <span class="meta-label">Raised By</span>
+            <span class="meta-value">{{ c.raisedByEmployeeName }}</span>
+          </div>
+
+          <div class="meta-field">
+            <span class="meta-label">Current Handler</span>
+            <span class="meta-value">{{ c.currentHandlerEmployeeName ?? 'Unassigned' }}</span>
+          </div>
+
+          @if (c.escalationDueAt) {
+            <div class="meta-field">
+              <span class="meta-label">Escalation Deadline</span>
+              <span class="meta-value time-critical">{{ c.escalationDueAt | date: 'dd-MM-yyyy hh:mm a' }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Timestamps card -->
+        <div class="meta-card">
+          <h3 class="meta-card-title">Timestamps</h3>
+
+          <div class="meta-field">
+            <span class="meta-label">Filed On</span>
+            <span class="meta-value">{{ c.createdAt | date: 'dd-MM-yyyy hh:mm a' }}</span>
+          </div>
+
+          <div class="meta-field">
+            <span class="meta-label">Last Updated</span>
+            <span class="meta-value">{{ c.updatedAt | date: 'dd-MM-yyyy hh:mm a' }}</span>
+          </div>
+
+          @if (c.resolvedAt) {
+            <div class="meta-field">
+              <span class="meta-label">Resolved On</span>
+              <span class="meta-value">{{ c.resolvedAt | date: 'dd-MM-yyyy hh:mm a' }}</span>
+            </div>
+          }
+
+          @if (c.closedAt) {
+            <div class="meta-field">
+              <span class="meta-label">Closed On</span>
+              <span class="meta-value">{{ c.closedAt | date: 'dd-MM-yyyy hh:mm a' }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Escalation log -->
+        @if (escalations().length > 0) {
+          <div class="meta-card">
+            <h3 class="meta-card-title text-critical">Escalations Log</h3>
+            <div class="escalation-log-list">
+              @for (esc of escalations(); track esc.escalationId) {
+                <div class="escalation-log-item">
+                  <div class="esc-header">
+                    <span class="esc-level-badge">Level {{ esc.escalationLevel }}</span>
+                    <span class="esc-time">{{ esc.escalatedAt | date: 'dd-MM-yyyy hh:mm a' }}</span>
+                  </div>
+                  <p class="esc-reason">"{{ esc.reason }}"</p>
+                  <div class="esc-footer">
+                    <span>By: {{ esc.escalatedByEmployeeName }}</span>
+                    <span>To: {{ esc.escalatedToEmployeeName }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Comments -->
+        <app-complaint-comments
+          [complaintId]="c.complaintId"
+          [complaintStatusId]="c.statusId"
+          [raisedByEmployeeId]="c.raisedByEmployeeId">
+        </app-complaint-comments>
+      </div>
+    </div>
+  }
+
+  <!-- ── Attachment Preview Modal ────────────────────────────────────────── -->
+  @if (previewAttachment()) {
+    <div class="modal-overlay" (click)="closePreview()">
+      <div class="modal-container" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">{{ previewAttachment()?.originalFileName }}</h3>
+          <div class="modal-actions">
+            @if (previewUrl()) {
+              <button type="button" class="btn-action btn-download" (click)="downloadPreview()" title="Download File">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Download</span>
+              </button>
+            }
+            <button type="button" class="btn-action btn-close" (click)="closePreview()" title="Close Preview">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="modal-body">
+          @if (isPreviewLoading()) {
+            <div class="modal-loading">
+              <svg class="spinner" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-linecap="round"></circle>
+              </svg>
+              <span>Loading preview...</span>
+            </div>
+          } @else if (previewError()) {
+            <div class="modal-error">
+              <svg class="error-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <p>{{ previewError() }}</p>
+            </div>
+          } @else if (previewUrl()) {
+            <div class="preview-content">
+              @if (isImage(previewAttachment()?.mimeType)) {
+                <img [src]="previewUrl()" [alt]="previewAttachment()?.originalFileName" class="preview-image" />
+              } @else if (isPdf(previewAttachment()?.mimeType)) {
+                <object [data]="previewUrlSafe()" type="application/pdf" class="preview-pdf">
+                  <embed [src]="previewUrlSafe()" type="application/pdf" />
+                </object>
+              } @else {
+                <div class="unsupported-preview">
+                  <p>Preview not available for this file type.</p>
+                  <button type="button" class="btn btn-primary" (click)="downloadPreview()">Download to View</button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Action Remarks Modal ────────────────────────────────────────────── -->
+  @if (activeModal()) {
+    <div class="action-modal-overlay" (click)="closeModal()">
+      <div class="action-modal" (click)="$event.stopPropagation()">
+
+        <!-- Modal Header -->
+        <div class="action-modal__header">
+          <div class="action-modal__title-row">
+            <!-- Icon per action type -->
+            @switch (activeModal()) {
+              @case ('resolve') {
+                <span class="action-modal__icon action-modal__icon--success">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </span>
+              }
+              @case ('escalate') {
+                <span class="action-modal__icon action-modal__icon--warning">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="18 15 12 9 6 15"></polyline>
+                  </svg>
+                </span>
+              }
+              @case ('close') {
+                <span class="action-modal__icon action-modal__icon--neutral">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                  </svg>
+                </span>
+              }
+              @case ('reopen') {
+                <span class="action-modal__icon action-modal__icon--danger">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="1 4 1 10 7 10"></polyline>
+                    <path d="M3.51 15a9 9 0 1 0 .49-3.71"></path>
+                  </svg>
+                </span>
+              }
+            }
+            <h3 class="action-modal__title">{{ getModalTitle() }}</h3>
+          </div>
+          <button type="button" class="action-modal__close" (click)="closeModal()" aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="action-modal__body">
+          <div class="form-field">
+            <label class="form-label" for="action-remarks">{{ getRemarksLabel() }}</label>
+            <textarea
+              id="action-remarks"
+              class="form-input action-modal__textarea"
+              rows="4"
+              [placeholder]="isRemarksRequired() ? 'Please provide remarks…' : 'Optionally describe why you are closing this complaint…'"
+              [value]="actionRemarks()"
+              (input)="actionRemarks.set($any($event.target).value)">
+            </textarea>
+            @if (isRemarksRequired() && actionRemarks().trim().length === 0) {
+              <p class="field-error">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                Remarks are required for this action.
+              </p>
+            }
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="action-modal__footer">
+          <button type="button" class="btn btn-ghost" (click)="closeModal()" [disabled]="isActionLoading()">
+            Cancel
+          </button>
+          <button
+            type="button"
+            [id]="'btn-confirm-' + activeModal()"
+            [class]="'btn btn-action-confirm btn-action-confirm--' + activeModal()"
+            (click)="onSubmitAction()"
+            [disabled]="isActionLoading() || !canSubmitAction()">
+            @if (isActionLoading()) {
+              <span class="spinner spinner-sm"></span>
+              Processing...
+            } @else {
+              {{ getModalTitle() }}
+            }
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</app-dashboard-shell>
