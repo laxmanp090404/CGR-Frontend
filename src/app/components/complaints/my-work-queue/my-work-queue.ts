@@ -4,16 +4,17 @@ import { Router, RouterModule } from '@angular/router';
 
 import { ComplaintService } from '../../../services/complaint.service';
 import { ToastService } from '../../../shared/services/toast.service';
-import { ComplaintDashboardDto, PagedResultDto } from '../../../models/complaint.model';
+import { ComplaintDashboardDto, PagedResultDto, ComplaintFilterParams } from '../../../models/complaint.model';
 import { DashboardShellComponent, NavItem } from '../../../shared/components/dashboard-shell/dashboard-shell';
 import { DashboardSkeletonComponent } from '../../../shared/components/dashboard-skeleton/dashboard-skeleton';
 import { TokenStorageService } from '../../../services/auth.api.service';
 import { getNavItems } from '../../../shared/components/dashboard-shell/nav-menu';
+import { ComplaintFilterComponent } from '../../../shared/components/complaint-filter/complaint-filter';
 
 @Component({
   selector: 'app-my-work-queue',
   standalone: true,
-  imports: [CommonModule, RouterModule, DashboardShellComponent, DashboardSkeletonComponent],
+  imports: [CommonModule, RouterModule, DashboardShellComponent, DashboardSkeletonComponent, ComplaintFilterComponent],
   templateUrl: './my-work-queue.html',
   styleUrl: './my-work-queue.scss',
 })
@@ -28,19 +29,41 @@ export class MyWorkQueueComponent {
   readonly currentPage = signal(1);
   readonly pageSize = signal(10);
 
+  // Filter States
+  readonly statusId = signal<number | null>(null);
+  readonly priorityId = signal<number | null>(null);
+  readonly categoryId = signal<number | null>(null);
+  readonly departmentId = signal<number | null>(null);
+  readonly searchQuery = signal<string>('');
+
+  readonly isAdmin = computed(() => this.tokenStorage.getRole() === 'ADMIN');
+  readonly deptId = computed(() => this.tokenStorage.getDepartmentId());
+
   readonly navItems = computed<NavItem[]>(() => {
     const role = this.tokenStorage.getRole();
     return role ? getNavItems(role) : [];
   });
 
   constructor() {
+    const userDeptId = this.tokenStorage.getDepartmentId();
+    if (!this.isAdmin() && userDeptId) {
+      this.departmentId.set(userDeptId);
+    }
     this.loadQueue();
   }
 
   loadQueue(): void {
     this.isLoading.set(true);
     this.complaintService
-      .getMyWorkQueue(this.currentPage(), this.pageSize())
+      .getMyWorkQueue(
+        this.currentPage(),
+        this.pageSize(),
+        this.statusId(),
+        this.priorityId(),
+        this.categoryId(),
+        this.departmentId(),
+        this.searchQuery()
+      )
       .subscribe({
         next: (res) => {
           this.result.set(res);
@@ -51,6 +74,22 @@ export class MyWorkQueueComponent {
           this.isLoading.set(false);
         },
       });
+  }
+
+  onFilterChanged(filters: ComplaintFilterParams): void {
+    this.statusId.set(filters.statusId);
+    this.priorityId.set(filters.priorityId);
+    this.categoryId.set(filters.categoryId);
+    const userDeptId = this.tokenStorage.getDepartmentId();
+    if (!this.isAdmin() && userDeptId) {
+      this.departmentId.set(userDeptId);
+    } else {
+      this.departmentId.set(filters.departmentId);
+    }
+    this.searchQuery.set(filters.search);
+    this.pageSize.set(filters.pageSize);
+    this.currentPage.set(1); // Reset to page 1
+    this.loadQueue();
   }
 
   goToPage(page: number): void {

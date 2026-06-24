@@ -34,11 +34,25 @@ export class ComplaintService {
     return this.http.get<PagedResultDto<ComplaintDashboardDto>>(this.apiBase, { params });
   }
 
-  getMyWorkQueue(page = 1, pageSize = 10): Observable<PagedResultDto<ComplaintDashboardDto>> {
+  getMyWorkQueue(
+    page = 1,
+    pageSize = 10,
+    statusId?: number | null,
+    priorityId?: number | null,
+    categoryId?: number | null,
+    departmentId?: number | null,
+    search?: string | null
+  ): Observable<PagedResultDto<ComplaintDashboardDto>> {
     const params: Record<string, string> = {
       page: String(page),
       pageSize: String(pageSize),
     };
+    if (statusId != null) params['statusId'] = String(statusId);
+    if (priorityId != null) params['priorityId'] = String(priorityId);
+    if (categoryId != null) params['categoryId'] = String(categoryId);
+    if (departmentId != null) params['departmentId'] = String(departmentId);
+    if (search) params['search'] = search;
+
     return this.http.get<PagedResultDto<ComplaintDashboardDto>>(`${this.apiBase}/my-work-queue`, { params });
   }
 

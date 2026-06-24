@@ -40,14 +40,26 @@
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: var(--space-4);
 }
 
 @media (min-width: 1024px) {
   .kpi-grid--6 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .kpi-grid--7 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1400px) {
+  .kpi-grid--6 {
     grid-template-columns: repeat(6, 1fr);
   }
+}
+
+@media (min-width: 1600px) {
   .kpi-grid--7 {
     grid-template-columns: repeat(7, 1fr);
   }

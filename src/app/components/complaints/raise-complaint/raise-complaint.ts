@@ -159,7 +159,7 @@ export class RaiseComplaintComponent implements OnInit {
       next: () => {
         this.toast.success('Complaint filed successfully!');
         this.isLoading.set(false);
-        this.router.navigate([this.getRedirectRoute()]);
+        this.router.navigate([this.getMyFiledComplaintsRoute()]);
       },
       error: (err) => {
         const errorMsg = err?.error?.message || 'Failed to file complaint. Please try again.';
@@ -176,5 +176,13 @@ export class RaiseComplaintComponent implements OnInit {
   private getRedirectRoute(): string {
     const role = this.tokenStorage.getRole();
     return role ? ROLE_DASHBOARD_ROUTE[role] : '/login';
+  }
+
+  private getMyFiledComplaintsRoute(): string {
+    const role = this.tokenStorage.getRole();
+    if (role === 'EMPLOYEE') return '/employee/my-complaints';
+    if (role === 'GRO') return '/gro/my-filed-complaints';
+    if (role === 'DEPARTMENT_HEAD') return '/dept-head/my-filed-complaints';
+    return '/login';
   }
 }

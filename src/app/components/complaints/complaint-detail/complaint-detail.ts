@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
 
 import { ComplaintService } from '../../../services/complaint.service';
+import { ComplaintRequestService } from '../../../services/complaint-request.service';
 import { ToastService } from '../../../shared/services/toast.service';
 import { DashboardShellComponent, NavItem } from '../../../shared/components/dashboard-shell/dashboard-shell';
 import { ComplaintCommentsComponent } from '../../../shared/components/complaint-comments/complaint-comments';
@@ -31,7 +32,7 @@ const ROLE_DEPARTMENT_HEAD = 'DEPARTMENT_HEAD';
 const ROLE_ADMIN           = 'ADMIN';
 
 // Modal key type
-type ActiveModal = 'resolve' | 'escalate' | 'close' | 'reopen' | null;
+type ActiveModal = 'resolve' | 'escalate' | 'close' | 'reopen' | 'rejectRequest' | null;
 
 @Component({
   selector: 'app-complaint-detail',
@@ -42,6 +43,7 @@ type ActiveModal = 'resolve' | 'escalate' | 'close' | 'reopen' | null;
 })
 export class ComplaintDetailComponent implements OnInit {
   private readonly complaintService = inject(ComplaintService);
+  private readonly requestService = inject(ComplaintRequestService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
@@ -132,10 +134,23 @@ export class ComplaintDetailComponent implements OnInit {
     );
   });
 
+  /** Can the current user request rejection? GRO or Dept Head + current handler + status Assigned/InProgress/Escalated */
+  readonly canRequestRejection = computed(() => {
+    const c = this.complaint();
+    const empId = this.currentEmployeeId();
+    const role = this.currentRole();
+    if (!c) return false;
+    return (
+      c.currentHandlerEmployeeId === empId &&
+      (role === ROLE_GRO || role === ROLE_DEPARTMENT_HEAD) &&
+      (c.statusId === STATUS_ASSIGNED || c.statusId === STATUS_IN_PROGRESS || c.statusId === 4)
+    );
+  });
+
   // ── Remarks required per modal ─────────────────────────────────────────────
   readonly isRemarksRequired = computed(() => {
     const m = this.activeModal();
-    return m === 'resolve' || m === 'escalate' || m === 'reopen';
+    return m === 'resolve' || m === 'escalate' || m === 'reopen' || m === 'rejectRequest';
   });
 
   readonly canSubmitAction = computed(() => {
@@ -214,6 +229,7 @@ export class ComplaintDetailComponent implements OnInit {
       case 'escalate': return 'Escalate Complaint';
       case 'close':    return 'Close Complaint';
       case 'reopen':   return 'Reopen Complaint';
+      case 'rejectRequest': return 'Request Complaint Rejection';
       default:         return '';
     }
   }
@@ -224,6 +240,7 @@ export class ComplaintDetailComponent implements OnInit {
       case 'escalate': return 'Escalation Reason';
       case 'close':    return 'Closing Remarks (optional)';
       case 'reopen':   return 'Reason for Reopening';
+      case 'rejectRequest': return 'Reason for Rejection Request';
       default:         return 'Remarks';
     }
   }
@@ -255,23 +272,27 @@ export class ComplaintDetailComponent implements OnInit {
 
     this.isActionLoading.set(true);
 
-    let action$;
-    switch (modal) {
-      case 'resolve':
-        action$ = this.complaintService.resolveComplaint(c.complaintId, this.actionRemarks());
-        break;
-      case 'escalate':
-        action$ = this.complaintService.escalateComplaint(c.complaintId, this.actionRemarks());
-        break;
-      case 'close':
-        action$ = this.complaintService.closeComplaint(c.complaintId, this.actionRemarks());
-        break;
-      case 'reopen':
-        action$ = this.complaintService.reopenComplaint(c.complaintId, this.actionRemarks());
-        break;
-      default:
-        this.isActionLoading.set(false);
-        return;
+    let action$: any;
+    if (modal === 'rejectRequest') {
+      action$ = this.requestService.createRequest(c.complaintId, this.actionRemarks());
+    } else {
+      switch (modal) {
+        case 'resolve':
+          action$ = this.complaintService.resolveComplaint(c.complaintId, this.actionRemarks());
+          break;
+        case 'escalate':
+          action$ = this.complaintService.escalateComplaint(c.complaintId, this.actionRemarks());
+          break;
+        case 'close':
+          action$ = this.complaintService.closeComplaint(c.complaintId, this.actionRemarks());
+          break;
+        case 'reopen':
+          action$ = this.complaintService.reopenComplaint(c.complaintId, this.actionRemarks());
+          break;
+        default:
+          this.isActionLoading.set(false);
+          return;
+      }
     }
 
     action$.subscribe({
@@ -281,13 +302,14 @@ export class ComplaintDetailComponent implements OnInit {
           escalate: 'Complaint escalated successfully.',
           close:    'Complaint closed successfully.',
           reopen:   'Complaint reopened and reassigned.',
+          rejectRequest: 'Complaint rejection request submitted successfully.',
         };
         this.toast.success(successMsg[modal] ?? 'Action completed.');
         this.closeModal();
         this.isActionLoading.set(false);
         this.loadComplaintData(c.complaintId);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.toast.error(err?.error?.message ?? 'Action failed. Please try again.');
         this.isActionLoading.set(false);
       },

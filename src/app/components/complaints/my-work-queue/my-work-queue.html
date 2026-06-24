@@ -10,6 +10,13 @@
     </button>
   </div>
 
+  <app-complaint-filter
+    [showRaisedByMeFilter]="false"
+    [departmentId]="deptId()"
+    [disableDepartmentFilter]="!isAdmin()"
+    (filterChange)="onFilterChanged($event)"
+  />
+
   @if (isLoading()) {
     <app-dashboard-skeleton [cardCount]="0" [chartCount]="0" />
   } @else if (result(); as data) {

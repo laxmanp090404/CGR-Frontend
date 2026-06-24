@@ -42,12 +42,19 @@ export class DepartmentComplaintsComponent {
   readonly departmentId = signal<number | null>(null);
   readonly searchQuery = signal<string>('');
 
+  readonly isDeptHead = computed(() => this.tokenStorage.getRole() === 'DEPARTMENT_HEAD');
+  readonly deptId = computed(() => this.tokenStorage.getDepartmentId());
+
   readonly navItems = computed<NavItem[]>(() => {
     const role = this.tokenStorage.getRole();
     return role ? getNavItems(role) : [];
   });
 
   constructor() {
+    const userDeptId = this.tokenStorage.getDepartmentId();
+    if (this.isDeptHead() && userDeptId) {
+      this.departmentId.set(userDeptId);
+    }
     this.loadComplaints();
   }
 
@@ -62,7 +69,7 @@ export class DepartmentComplaintsComponent {
         this.categoryId(),
         this.departmentId(),
         this.searchQuery(),
-        false // raisedByMe = false for Department Complaints
+        false 
       )
       .subscribe({
         next: (res) => {
@@ -80,7 +87,12 @@ export class DepartmentComplaintsComponent {
     this.statusId.set(filters.statusId);
     this.priorityId.set(filters.priorityId);
     this.categoryId.set(filters.categoryId);
-    this.departmentId.set(filters.departmentId);
+    const userDeptId = this.tokenStorage.getDepartmentId();
+    if (this.isDeptHead() && userDeptId) {
+      this.departmentId.set(userDeptId);
+    } else {
+      this.departmentId.set(filters.departmentId);
+    }
     this.searchQuery.set(filters.search);
     this.pageSize.set(filters.pageSize);
     this.currentPage.set(1); // Reset to page 1 on filter changes

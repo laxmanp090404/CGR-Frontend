@@ -19,7 +19,7 @@ export interface NavItem {
 })
 export class DashboardShellComponent {
   readonly navItems = input.required<NavItem[]>();
-  readonly title = input<string>('CGR Platform');
+  readonly title = input<string>('IssueBridge');
 
   private readonly tokenStorage = inject(TokenStorageService);
   private readonly router = inject(Router);

@@ -44,7 +44,8 @@
     <div class="filter-item">
       <label for="department" class="filter-label">Department</label>
       <select id="department" class="form-select filter-input" [ngModel]="localDepartmentId()"
-        (ngModelChange)="localDepartmentId.set($event); localCategoryId.set(null); onFilterChange()">
+        (ngModelChange)="localDepartmentId.set($event); localCategoryId.set(null); onFilterChange()"
+        [disabled]="disableDepartmentFilter()">
         <option [value]="null">All Departments</option>
         @for (d of departments(); track d.departmentId) {
         <option [value]="d.departmentId">{{ d.departmentName }}</option>
@@ -84,8 +85,18 @@
       <!-- Page Size Selector -->
       <div class="page-size-container">
         <label for="pageSize" class="page-size-label">Page Size:</label>
-        <input id="pageSize" type="number" min="1" class="form-control page-size-input" [ngModel]="localPageSize()"
-          (ngModelChange)="onPageSizeChange($event)" />
+        <select id="pageSize" class="page-size-select" [ngModel]="pageSizeDropdownValue()"
+          (ngModelChange)="onDropdownPageSizeChange($event)">
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="custom">Custom...</option>
+        </select>
+        @if (isCustomPageSize()) {
+          <input type="number" min="1" class="page-size-input" [ngModel]="localPageSize()"
+            (ngModelChange)="onCustomPageSizeChange($event)" placeholder="Size" />
+        }
       </div>
 
       <!-- Reset Button -->

@@ -1,0 +1,68 @@
+<app-dashboard-shell [navItems]="navItems()" [title]="selectedDept() ? (selectedDept()!.departmentName + ' Department Analytics') : 'Department Analytics'">
+  @if (isLoading()) {
+    <app-dashboard-skeleton [cardCount]="5" [chartCount]="1" />
+  } @else {
+    <!-- Dropdown to select department -->
+    <div class="analytics-filter-card">
+      <div class="filter-item">
+        <label for="dept-select" class="filter-label">Select Department</label>
+        <div class="select-wrapper">
+          <select id="dept-select" class="form-select filter-input select-dept" (change)="onDepartmentChange($event)" [value]="selectedDeptId()">
+            @for (d of departments(); track d.id) {
+              <option [value]="d.id">{{ d.name }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+    
+    @if (selectedDept(); as dept) {
+      <!-- KPI Cards -->
+      <div class="dashboard-header-row mt-6">
+        <h2 class="section-title">{{ dept.departmentName }} Performance</h2>
+      </div>
+
+      <div class="kpi-grid">
+        <app-kpi-card label="Total Complaints" [value]="dept.totalComplaints" icon="total" colorVariant="primary"></app-kpi-card>
+        <app-kpi-card label="Open" [value]="dept.openComplaints" icon="open" colorVariant="warning"></app-kpi-card>
+        <app-kpi-card label="Overdue" [value]="dept.overdueComplaints" icon="overdue" colorVariant="danger"></app-kpi-card>
+        <app-kpi-card label="SLA Compliance" [value]="dept.slaCompliancePercent !== null ? (dept.slaCompliancePercent + '%') : '—'" icon="sla" [colorVariant]="getSlaClass(dept.slaCompliancePercent) === 'badge--success' ? 'success' : (getSlaClass(dept.slaCompliancePercent) === 'badge--warning' ? 'warning' : 'danger')"></app-kpi-card>
+        <app-kpi-card label="Avg. Resolution" [value]="dept.avgResolutionHours !== null ? (dept.avgResolutionHours + 'h') : '—'" icon="overdue" colorVariant="primary"></app-kpi-card>
+      </div>
+
+      <div class="charts-row">
+        <!-- Status Distribution -->
+        <div class="chart-card">
+          <div class="chart-card__header">
+            <h3 class="chart-card__title">Status Distribution</h3>
+          </div>
+          <div class="chart-card__body">
+            <app-status-pie-chart [data]="dept.statusDistribution"></app-status-pie-chart>
+          </div>
+        </div>
+
+        <!-- SLA Gauge / Typography display -->
+        <div class="chart-card duration-card">
+          <div class="chart-card__header">
+            <h3 class="chart-card__title">SLA Compliance</h3>
+          </div>
+          <div class="chart-card__body duration-display">
+            <div class="duration-value" [ngClass]="getSlaClass(dept.slaCompliancePercent)">
+              {{ dept.slaCompliancePercent !== null ? (dept.slaCompliancePercent + '%') : '—' }}
+            </div>
+            <div class="duration-label">SLA Fulfillment Rating</div>
+            <p class="duration-desc text-muted">
+              Represents grievances resolved within department SLA limits. Our organizational target is ≥90% compliance.
+            </p>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <h3>No departments found</h3>
+        <p>There are no active departments with analytics data available.</p>
+      </div>
+    }
+  }
+</app-dashboard-shell>

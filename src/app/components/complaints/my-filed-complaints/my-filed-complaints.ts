@@ -44,6 +44,10 @@ export class MyFiledComplaintsComponent {
   readonly departmentId = signal<number | null>(null);
   readonly searchQuery = signal<string>('');
 
+  readonly isAdmin = computed(() => this.tokenStorage.getRole() === 'ADMIN');
+  readonly pageTitle = computed(() => this.isAdmin() ? 'View Complaints' : 'My Filed Complaints');
+  readonly pageDescription = computed(() => this.isAdmin() ? 'List of all complaints registered in the system.' : 'All complaints you have submitted.');
+
   readonly navItems = computed<NavItem[]>(() => {
     const role = this.tokenStorage.getRole();
     return role ? getNavItems(role) : [];
@@ -55,6 +59,7 @@ export class MyFiledComplaintsComponent {
 
   loadComplaints(): void {
     this.isLoading.set(true);
+    const raisedByMeVal = this.isAdmin() ? false : true;
     this.complaintService
       .getPagedComplaints(
         this.currentPage(),
@@ -64,7 +69,7 @@ export class MyFiledComplaintsComponent {
         this.categoryId(),
         this.departmentId(),
         this.searchQuery(),
-        true // raisedByMe = true for My Filed Complaints
+        raisedByMeVal
       )
       .subscribe({
         next: (res) => {

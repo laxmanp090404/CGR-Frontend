@@ -5,6 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { LookupService, PriorityDto, ComplaintStatusDto, CategoryDto, DepartmentLookupDto } from '../../../services/lookup.service';
 import { ComplaintFilterParams } from '../../../models/complaint.model';
 
+function parseId(val: any): number | null {
+  if (val === null || val === undefined || val === 'null' || val === '') return null;
+  const num = Number(val);
+  return isNaN(num) ? null : num;
+}
+
 @Component({
   selector: 'app-complaint-filter',
   standalone: true,
@@ -28,6 +34,7 @@ export class ComplaintFilterComponent implements OnInit {
   readonly showDepartmentFilter = input<boolean>(true);
   readonly showRaisedByMeFilter = input<boolean>(true);
   readonly showCategoryFilter = input<boolean>(true);
+  readonly disableDepartmentFilter = input<boolean>(false);
 
   // Output event emitter
   readonly filterChange = output<ComplaintFilterParams>();
@@ -40,6 +47,8 @@ export class ComplaintFilterComponent implements OnInit {
   readonly localDepartmentId = signal<number | null>(null);
   readonly localRaisedByMe = signal<boolean>(false);
   readonly localPageSize = signal<number>(10);
+  readonly isCustomPageSize = signal<boolean>(false);
+  readonly pageSizeDropdownValue = signal<string>('10');
 
   // Lookup lists data
   readonly priorities = signal<PriorityDto[]>([]);
@@ -76,7 +85,15 @@ export class ComplaintFilterComponent implements OnInit {
       this.localRaisedByMe.set(this.raisedByMe() ?? false);
     });
     effect(() => {
-      this.localPageSize.set(this.pageSize() ?? 10);
+      const size = this.pageSize() ?? 10;
+      this.localPageSize.set(size);
+      if ([5, 10, 20, 50].includes(size)) {
+        this.isCustomPageSize.set(false);
+        this.pageSizeDropdownValue.set(String(size));
+      } else {
+        this.isCustomPageSize.set(true);
+        this.pageSizeDropdownValue.set('custom');
+      }
     });
   }
 
@@ -97,29 +114,48 @@ export class ComplaintFilterComponent implements OnInit {
 
   onFilterChange(): void {
     this.filterChange.emit({
-      statusId: this.localStatusId() ? Number(this.localStatusId()) : null,
-      priorityId: this.localPriorityId() ? Number(this.localPriorityId()) : null,
-      categoryId: this.localCategoryId() ? Number(this.localCategoryId()) : null,
-      departmentId: this.localDepartmentId() ? Number(this.localDepartmentId()) : null,
+      statusId: parseId(this.localStatusId()),
+      priorityId: parseId(this.localPriorityId()),
+      categoryId: parseId(this.localCategoryId()),
+      departmentId: parseId(this.localDepartmentId()),
       search: this.localSearch().trim(),
       raisedByMe: this.localRaisedByMe(),
-      pageSize: Number(this.localPageSize()),
+      pageSize: Number(this.localPageSize()) || 10,
     });
   }
-  onPageSizeChange(value: number | string): void {
-  const pageSize = Math.max(1, Number(value) || 1);
+  onDropdownPageSizeChange(value: string): void {
+    this.pageSizeDropdownValue.set(value);
+    if (value === 'custom') {
+      this.isCustomPageSize.set(true);
+    } else {
+      this.isCustomPageSize.set(false);
+      const size = Number(value);
+      this.localPageSize.set(size);
+      this.onFilterChange();
+    }
+  }
 
-  this.localPageSize.set(pageSize);
-  this.onFilterChange();
-}
+  onCustomPageSizeChange(value: any): void {
+    const size = Number(value);
+    if (size > 0) {
+      this.localPageSize.set(size);
+      this.onFilterChange();
+    }
+  }
 
   resetFilters(): void {
     this.localSearch.set('');
     this.localStatusId.set(null);
     this.localPriorityId.set(null);
     this.localCategoryId.set(null);
-    this.localDepartmentId.set(null);
+    if (!this.disableDepartmentFilter()) {
+      this.localDepartmentId.set(null);
+    } else {
+      this.localDepartmentId.set(this.departmentId() ?? null);
+    }
     this.localRaisedByMe.set(false);
+    this.isCustomPageSize.set(false);
+    this.pageSizeDropdownValue.set('10');
     this.localPageSize.set(10);
     this.onFilterChange();
   }

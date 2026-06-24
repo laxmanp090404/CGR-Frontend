@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs';
 
@@ -10,6 +10,8 @@ import { KpiCardComponent } from '../../../shared/components/kpi-card/kpi-card';
 import { StatusPieChartComponent } from '../../../shared/components/status-pie-chart/status-pie-chart';
 import { BarChartComponent, BarChartItem } from '../../../shared/components/bar-chart/bar-chart';
 import { DashboardSkeletonComponent } from '../../../shared/components/dashboard-skeleton/dashboard-skeleton';
+import { TokenStorageService } from '../../../services/auth.api.service';
+import { getNavItems } from '../../../shared/components/dashboard-shell/nav-menu';
 
 const PRIORITY_COLORS: Record<string, string> = {
   low: '#00ac46',
@@ -35,6 +37,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 export class DeptHeadDashboardComponent {
   private readonly analyticsService = inject(AnalyticsService);
   private readonly toast = inject(ToastService);
+  private readonly tokenStorage = inject(TokenStorageService);
 
   readonly isLoading = signal(true);
 
@@ -46,13 +49,10 @@ export class DeptHeadDashboardComponent {
 
   readonly escalationRate = signal<number>(0);
 
-  readonly navItems = signal<NavItem[]>([
-    { label: 'Dashboard', route: '/dept-head/dashboard', icon: 'dashboard' },
-    { label: 'Raise a Complaint', route: '/dept-head/raise-complaint', icon: 'raise' },
-    { label: 'My Filed Complaints', route: '/dept-head/my-filed-complaints', icon: 'requests' },
-    { label: 'Department Complaints', route: '/dept-head/department-complaints', icon: 'departments' },
-    { label: 'My Work Queue', route: '/dept-head/my-work-queue', icon: 'work-queue' },
-  ]);
+  readonly navItems = computed<NavItem[]>(() => {
+    const role = this.tokenStorage.getRole();
+    return role ? getNavItems(role) : [];
+  });
 
   constructor() {
     this.loadData();

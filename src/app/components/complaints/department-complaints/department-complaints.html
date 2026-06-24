@@ -13,6 +13,8 @@
   <!-- Reusable generic filter component -->
   <app-complaint-filter
     [showRaisedByMeFilter]="false"
+    [departmentId]="deptId()"
+    [disableDepartmentFilter]="isDeptHead()"
     (filterChange)="onFilterChanged($event)"
   />
 

@@ -29,6 +29,12 @@
 
 @media (min-width: 1024px) {
   .kpi-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1400px) {
+  .kpi-grid {
     grid-template-columns: repeat(6, 1fr);
   }
 }
