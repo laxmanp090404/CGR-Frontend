@@ -9,5 +9,5 @@ import { ToastComponent } from './shared/components/toast/toast';
   styleUrl: './app.scss'
 })
 export class App {
-  protected readonly title = signal('CGR-Client');
+  protected readonly title = signal('IssueBridge');
 }

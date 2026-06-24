@@ -1,0 +1,267 @@
+<app-dashboard-shell [navItems]="navItems()" title="Complaint Requests">
+  <div class="page-header-row">
+    <div>
+      <h2 class="section-title">{{ isAdmin() ? 'Complaint Rejection Requests' : 'My Complaint Requests' }}</h2>
+      <p class="section-desc">
+        {{ isAdmin() ? 'Review and manage complaint rejection requests submitted by GROs and Department Heads.' : 'Track status and details of complaint requests you have raised.' }}
+      </p>
+    </div>
+    <button class="btn btn-secondary" id="refresh-requests-btn" (click)="loadRequests()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+      Refresh
+    </button>
+  </div>
+
+  <!-- Filters Row -->
+  <div class="filters-card">
+    <div class="filters-group">
+      <label class="filter-label">Filter Status</label>
+      <div class="status-tabs">
+        <button
+          class="tab-btn"
+          [class.tab-btn--active]="selectedStatus() === null"
+          (click)="onStatusChange(null)">
+          All Requests
+        </button>
+        <button
+          class="tab-btn"
+          [class.tab-btn--active]="selectedStatus() === 1"
+          (click)="onStatusChange(1)">
+          Pending
+        </button>
+        <button
+          class="tab-btn"
+          [class.tab-btn--active]="selectedStatus() === 2"
+          (click)="onStatusChange(2)">
+          Approved
+        </button>
+        <button
+          class="tab-btn"
+          [class.tab-btn--active]="selectedStatus() === 3"
+          (click)="onStatusChange(3)">
+          Rejected
+        </button>
+      </div>
+    </div>
+
+    <!-- Page Size Filter -->
+    <div class="page-size-container">
+      <label for="pageSize" class="filter-label">Page Size</label>
+      <div class="page-size-controls">
+        <select
+          id="pageSize"
+          class="form-select page-size-select"
+          [ngModel]="pageSizeDropdownValue()"
+          (ngModelChange)="onDropdownPageSizeChange($event)">
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="custom">Custom...</option>
+        </select>
+        @if (isCustomPageSize()) {
+          <input
+            type="number"
+            min="1"
+            class="page-size-custom-input"
+            [ngModel]="pageSize()"
+            (ngModelChange)="onCustomPageSizeChange($event)"
+            placeholder="Size" />
+        }
+      </div>
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <app-dashboard-skeleton [cardCount]="0" [chartCount]="0" />
+  } @else if (result(); as data) {
+    @if (data.items.length === 0) {
+      <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <h3>No requests found</h3>
+        <p>No rejection requests match the current selection.</p>
+      </div>
+    } @else {
+      <div class="table-card">
+        <div class="table-wrapper">
+          <table class="data-table" id="requests-table">
+            <thead>
+              <tr>
+                <th>Req ID</th>
+                <th>Complaint Title</th>
+                @if (isAdmin()) {
+                  <th>Requested By</th>
+                }
+                <th>Reason/Remarks</th>
+                <th>Filed On</th>
+                <th>Status</th>
+                <th>Reviewed By / At</th>
+                @if (isAdmin() && selectedStatus() !== 2 && selectedStatus() !== 3) {
+                  <th>Actions</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of data.items; track item.requestId) {
+                <tr>
+                  <td class="id-cell">#{{ item.requestId }}</td>
+                  <td class="title-cell">
+                    <a [routerLink]="getComplaintDetailLink(item.complaintId)" class="complaint-link">
+                      {{ item.complaintTitle || 'Complaint #' + item.complaintId }}
+                    </a>
+                  </td>
+                  @if (isAdmin()) {
+                    <td>
+                      <span class="user-chip">
+                        {{ item.requestedByName }}
+                      </span>
+                    </td>
+                  }
+                  <td class="remarks-cell" [title]="item.remarks">
+                    {{ item.remarks || 'No remarks provided' }}
+                  </td>
+                  <td>{{ item.createdAt | date: 'dd MMM yyyy HH:mm' }}</td>
+                  <td>
+                    <span class="status-badge" [ngClass]="getStatusClass(item.requestStatusId)">
+                      {{ item.requestStatusName }}
+                    </span>
+                  </td>
+                  <td>
+                    @if (item.reviewedByName) {
+                      <div class="reviewer-info">
+                        <span class="reviewer-name">{{ item.reviewedByName }}</span>
+                        <span class="reviewer-date">{{ item.reviewedAt | date: 'dd MMM yyyy' }}</span>
+                      </div>
+                    } @else {
+                      <span class="neutral-placeholder">&mdash;</span>
+                    }
+                  </td>
+                  @if (isAdmin() && selectedStatus() !== 2 && selectedStatus() !== 3) {
+                    <td>
+                      @if (item.requestStatusId === 1) {
+                        <div class="action-btn-group">
+                          <button
+                            class="btn-tbl btn-tbl-success"
+                            (click)="openReviewModal(item, 'approve')"
+                            title="Approve Rejection">
+                            Approve
+                          </button>
+                          <button
+                            class="btn-tbl btn-tbl-danger"
+                            (click)="openReviewModal(item, 'reject')"
+                            title="Decline Rejection">
+                            Decline
+                          </button>
+                        </div>
+                      } @else {
+                        <span class="neutral-placeholder">&mdash;</span>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (data.totalPages > 1) {
+          <div class="pagination">
+            <button class="page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            @for (p of pages; track p) {
+              <button class="page-btn" [class.page-btn--active]="p === currentPage()" (click)="goToPage(p)">
+                {{ p }}
+              </button>
+            }
+            <button class="page-btn" [disabled]="currentPage() === data.totalPages" (click)="goToPage(currentPage() + 1)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+        }
+
+        <div class="table-meta">
+          Showing {{ data.items.length }} of {{ data.totalCount }} requests &mdash; Page {{ data.page }} of {{ data.totalPages }}
+        </div>
+      </div>
+    }
+  }
+
+  <!-- Review Modal Overlay -->
+  @if (activeReviewModal(); as modalType) {
+    <div class="review-modal-overlay" (click)="closeReviewModal()">
+      <div class="review-modal" (click)="$event.stopPropagation()">
+        
+        <!-- Header -->
+        <div class="review-modal__header" [class.review-modal__header--approve]="modalType === 'approve'" [class.review-modal__header--reject]="modalType === 'reject'">
+          <div class="review-modal__title-row">
+            <span class="review-modal__icon">
+              @if (modalType === 'approve') {
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              } @else {
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              }
+            </span>
+            <h3 class="review-modal__title">
+              {{ modalType === 'approve' ? 'Approve Rejection Request' : 'Decline Rejection Request' }}
+            </h3>
+          </div>
+          <button type="button" class="review-modal__close" (click)="closeReviewModal()" aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="review-modal__body">
+          <div class="warning-alert">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <div>
+              @if (modalType === 'approve') {
+                <p><strong>Approve request:</strong> This will formally mark the complaint as <strong>Rejected</strong> and close it. This action cannot be undone.</p>
+              } @else {
+                <p><strong>Decline request:</strong> This will decline the GRO's request, <strong>Reopen</strong> the complaint, bump its priority by 1 level, and assign it back to the initial department handler.</p>
+              }
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="review-remarks">Review Remarks / Remarks (Required)</label>
+            <textarea
+              id="review-remarks"
+              class="form-input review-modal__textarea"
+              placeholder="Enter remarks explaining the decision..."
+              [(ngModel)]="reviewRemarks"
+              rows="4"
+              required>
+            </textarea>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="review-modal__footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="closeReviewModal()"
+            [disabled]="isReviewLoading()">
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn"
+            [class.btn-success]="modalType === 'approve'"
+            [class.btn-danger]="modalType === 'reject'"
+            (click)="onSubmitReview()"
+            [disabled]="isReviewLoading() || !reviewRemarks().trim()">
+            @if (isReviewLoading()) {
+              <span class="spinner spinner-sm"></span>
+            }
+            Confirm
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+</app-dashboard-shell>

@@ -17,7 +17,12 @@ export interface ComplaintDashboardDto {
   raisedByName:string | null;
   currentHandlerName: string | null;
 }
-
+export interface CreateComplaintRequest {
+  complaintTitle: string;
+  complaintDescription: string;
+  categoryId: number;
+  attachments?: File[];
+}
 export interface ComplaintFilterParams {
   statusId: number | null;
   priorityId: number | null;
