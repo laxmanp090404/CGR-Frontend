@@ -52,4 +52,8 @@ export class LookupService {
     }
     return this.http.get<DepartmentLookupDto[]>(`${baseUrl}/api/department`, { params });
   }
+
+  getRoles(): Observable<any[]> {
+    return this.http.get<any[]>(`${baseUrl}/api/LookUp/roles`);
+  }
 }

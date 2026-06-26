@@ -1,6 +1,7 @@
 import { Component, input, inject, signal, HostListener, ElementRef, computed } from '@angular/core';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { filter } from 'rxjs/operators';
 import { TokenStorageService } from '../../../services/auth.api.service';
 import { AnalyticsService } from '../../../services/analytics.service';
 import { NotificationService } from '../../../services/notification.service';
@@ -30,13 +31,30 @@ export class DashboardShellComponent {
   private readonly notificationService = inject(NotificationService);
 
   readonly unreadCount = this.notificationService.unreadCount;
+  readonly currentUrl = signal(this.router.url);
+
+  readonly isAdmin = computed(() => {
+    return this.tokenStorage.getRole() === 'ADMIN';
+  });
+
+  readonly activeTab = computed(() => {
+    const url = this.currentUrl();
+    if (url.includes('/admin/departments') || 
+        url.includes('/admin/categories') || 
+        url.includes('/admin/employees') || 
+        url.includes('/admin/role-requests')) {
+      return 'system';
+    }
+    return 'home';
+  });
 
   readonly dynamicNavItems = computed(() => {
-    const items = this.navItems();
+    let items = this.navItems();
     const pcr = this.analyticsService.pendingComplaintRequests();
     const prr = this.analyticsService.pendingRoleRequests();
     
-    return items.map((item) => {
+    // Map badges
+    items = items.map((item) => {
       if (item.label === 'Complaint Requests' && pcr !== null) {
         return { ...item, badge: pcr };
       }
@@ -45,9 +63,33 @@ export class DashboardShellComponent {
       }
       return item;
     });
+
+    if (this.isAdmin()) {
+      const active = this.activeTab();
+      const systemRoutes = [
+        '/admin/departments',
+        '/admin/categories',
+        '/admin/employees',
+        '/admin/role-requests'
+      ];
+      if (active === 'system') {
+        return items.filter(item => systemRoutes.includes(item.route));
+      } else {
+        return items.filter(item => !systemRoutes.includes(item.route));
+      }
+    }
+
+    return items;
   });
 
   constructor() {
+    // Listen for route changes
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd)
+    ).subscribe((event) => {
+      this.currentUrl.set(event.urlAfterRedirects || event.url);
+    });
+
     const role = this.tokenStorage.getRole();
     if (role === 'ADMIN') {
       if (this.analyticsService.pendingComplaintRequests() === null) {
@@ -58,6 +100,14 @@ export class DashboardShellComponent {
           },
         });
       }
+    }
+  }
+
+  setTab(tab: 'home' | 'system'): void {
+    if (tab === 'home') {
+      this.router.navigate(['/admin/dashboard']);
+    } else {
+      this.router.navigate(['/admin/employees']);
     }
   }
 

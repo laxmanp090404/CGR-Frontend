@@ -12,6 +12,10 @@ import { RaiseComplaintComponent } from './components/complaints/raise-complaint
 import { ComplaintDetailComponent } from './components/complaints/complaint-detail/complaint-detail';
 import { ComplaintRequestsComponent } from './components/complaints/complaint-requests/complaint-requests';
 import { DepartmentWiseAnalyticsComponent } from './components/dashboards/department-wise-analytics/department-wise-analytics';
+import { EmployeesComponent } from './components/employees/employees';
+import { DepartmentsPlaceholderComponent } from './components/departments-placeholder/departments-placeholder';
+import { CategoriesPlaceholderComponent } from './components/categories-placeholder/categories-placeholder';
+import { RoleRequestsPlaceholderComponent } from './components/role-requests-placeholder/role-requests-placeholder';
 import { authGuard, roleGuard, guestGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -42,6 +46,10 @@ export const routes: Routes = [
   { path: 'admin/department-wise-analytics', component: DepartmentWiseAnalyticsComponent, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
   { path: 'admin/requests',        component: ComplaintRequestsComponent,  canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
   { path: 'admin/notifications',   loadComponent: () => import('./components/notifications/notifications').then(m => m.NotificationsComponent), canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
+  { path: 'admin/employees',       component: EmployeesComponent,          canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
+  { path: 'admin/departments',     component: DepartmentsPlaceholderComponent, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
+  { path: 'admin/categories',      component: CategoriesPlaceholderComponent, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
+  { path: 'admin/role-requests',   component: RoleRequestsPlaceholderComponent, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
 
   // Department Head
   { path: 'dept-head/dashboard',             component: DeptHeadDashboardComponent,    canActivate: [authGuard, roleGuard], data: { roles: ['DEPARTMENT_HEAD'] } },
