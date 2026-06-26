@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { ComplaintRequestService } from '../../../services/complaint-request.service';
 import { ToastService } from '../../../shared/services/toast.service';
 import { TokenStorageService } from '../../../services/auth.api.service';
+import { AnalyticsService } from '../../../services/analytics.service';
 import { PagedResultDto } from '../../../models/complaint.model';
 import { ComplaintRequestDto } from '../../../models/complaint-request.model';
 import { DashboardShellComponent, NavItem } from '../../../shared/components/dashboard-shell/dashboard-shell';
@@ -32,6 +33,7 @@ export class ComplaintRequestsComponent implements OnInit {
   private readonly requestService = inject(ComplaintRequestService);
   private readonly toast = inject(ToastService);
   private readonly tokenStorage = inject(TokenStorageService);
+  private readonly analyticsService = inject(AnalyticsService);
 
   readonly isLoading = signal(true);
   readonly result = signal<PagedResultDto<ComplaintRequestDto> | null>(null);
@@ -150,6 +152,14 @@ export class ComplaintRequestsComponent implements OnInit {
         this.closeReviewModal();
         this.isReviewLoading.set(false);
         this.loadRequests();
+        if (this.currentRole() === 'ADMIN') {
+          this.analyticsService.getAdminDashboard().subscribe({
+            next: (data) => {
+              this.analyticsService.pendingComplaintRequests.set(data.pendingComplaintRequests);
+              this.analyticsService.pendingRoleRequests.set(data.pendingRoleRequests);
+            }
+          });
+        }
       },
       error: (err) => {
         this.toast.error(err?.error?.message ?? 'Action failed. Please try again.');

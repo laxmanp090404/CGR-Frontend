@@ -90,6 +90,10 @@ export class AdminDashboardComponent {
           })
         );
 
+        // Also update shared signals
+        this.analyticsService.pendingComplaintRequests.set(res.admin.pendingComplaintRequests);
+        this.analyticsService.pendingRoleRequests.set(res.admin.pendingRoleRequests);
+
         // Map top categories chart
         this.topCatsChartData.set(
           res.topCats.map((c) => ({

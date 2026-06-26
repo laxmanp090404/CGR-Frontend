@@ -18,7 +18,7 @@
   />
 
   @if (isLoading()) {
-    <app-dashboard-skeleton [cardCount]="0" [chartCount]="0" />
+    <app-table-skeleton [cols]="7" [rows]="10" />
   } @else if (result(); as data) {
     @if (data.items.length === 0) {
       <div class="empty-state">

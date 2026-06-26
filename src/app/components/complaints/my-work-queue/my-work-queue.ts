@@ -6,7 +6,7 @@ import { ComplaintService } from '../../../services/complaint.service';
 import { ToastService } from '../../../shared/services/toast.service';
 import { ComplaintDashboardDto, PagedResultDto, ComplaintFilterParams } from '../../../models/complaint.model';
 import { DashboardShellComponent, NavItem } from '../../../shared/components/dashboard-shell/dashboard-shell';
-import { DashboardSkeletonComponent } from '../../../shared/components/dashboard-skeleton/dashboard-skeleton';
+import { TableSkeletonComponent } from '../../../shared/components/table-skeleton/table-skeleton';
 import { TokenStorageService } from '../../../services/auth.api.service';
 import { getNavItems } from '../../../shared/components/dashboard-shell/nav-menu';
 import { ComplaintFilterComponent } from '../../../shared/components/complaint-filter/complaint-filter';
@@ -14,7 +14,7 @@ import { ComplaintFilterComponent } from '../../../shared/components/complaint-f
 @Component({
   selector: 'app-my-work-queue',
   standalone: true,
-  imports: [CommonModule, RouterModule, DashboardShellComponent, DashboardSkeletonComponent, ComplaintFilterComponent],
+  imports: [CommonModule, RouterModule, DashboardShellComponent, TableSkeletonComponent, ComplaintFilterComponent],
   templateUrl: './my-work-queue.html',
   styleUrl: './my-work-queue.scss',
 })

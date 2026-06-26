@@ -6,7 +6,7 @@ import { ComplaintService } from '../../../services/complaint.service';
 import { ToastService } from '../../../shared/services/toast.service';
 import { ComplaintDashboardDto, PagedResultDto, ComplaintFilterParams } from '../../../models/complaint.model';
 import { DashboardShellComponent, NavItem } from '../../../shared/components/dashboard-shell/dashboard-shell';
-import { DashboardSkeletonComponent } from '../../../shared/components/dashboard-skeleton/dashboard-skeleton';
+import { TableSkeletonComponent } from '../../../shared/components/table-skeleton/table-skeleton';
 import { ComplaintFilterComponent } from '../../../shared/components/complaint-filter/complaint-filter';
 import { TokenStorageService } from '../../../services/auth.api.service';
 import { getNavItems } from '../../../shared/components/dashboard-shell/nav-menu';
@@ -18,7 +18,7 @@ import { getNavItems } from '../../../shared/components/dashboard-shell/nav-menu
     CommonModule,
     RouterModule,
     DashboardShellComponent,
-    DashboardSkeletonComponent,
+    TableSkeletonComponent,
     ComplaintFilterComponent,
   ],
   templateUrl: './department-complaints.html',

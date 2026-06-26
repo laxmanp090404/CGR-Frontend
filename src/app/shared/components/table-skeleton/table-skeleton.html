@@ -1,0 +1,34 @@
+<div class="table-skeleton-wrapper">
+  <div class="skeleton-table-card">
+    <div class="skeleton-table-wrapper">
+      <table class="skeleton-table">
+        @if (showHeader()) {
+          <thead>
+            <tr>
+              @for (col of colsArray; track $index) {
+                <th>
+                  <div class="skeleton-pulse skeleton-header-cell"></div>
+                </th>
+              }
+            </tr>
+          </thead>
+        }
+        <tbody>
+          @for (row of rowsArray; track $index) {
+            <tr>
+              @for (col of colsArray; track $colIndex; let $colIndex = $index) {
+                <td>
+                  <div class="skeleton-pulse" [ngClass]="getColumnClass($colIndex)"></div>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="skeleton-footer">
+      <div class="skeleton-pulse skeleton-footer-text"></div>
+    </div>
+  </div>
+</div>

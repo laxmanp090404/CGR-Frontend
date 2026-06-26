@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
@@ -17,6 +17,9 @@ import {
 export class AnalyticsService {
   private readonly http = inject(HttpClient);
   private readonly apiBase = `${baseUrl}/api/analytics`;
+
+  readonly pendingComplaintRequests = signal<number | null>(null);
+  readonly pendingRoleRequests = signal<number | null>(null);
 
   getAdminDashboard(): Observable<AdminDashboardDto> {
     return this.http.get<AdminDashboardDto>(`${this.apiBase}/admin-dashboard`);
