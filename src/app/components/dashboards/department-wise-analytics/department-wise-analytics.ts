@@ -12,7 +12,7 @@ import { DashboardSkeletonComponent } from '../../../shared/components/dashboard
 import { getNavItems } from '../../../shared/components/dashboard-shell/nav-menu';
 
 @Component({
-  selector: 'app-admin-analytics',
+  selector: 'app-department-wise-analytics',
   standalone: true,
   imports: [
     CommonModule,
@@ -21,10 +21,10 @@ import { getNavItems } from '../../../shared/components/dashboard-shell/nav-menu
     StatusPieChartComponent,
     DashboardSkeletonComponent,
   ],
-  templateUrl: './analytics.html',
-  styleUrl: './analytics.scss',
+  templateUrl: './department-wise-analytics.html',
+  styleUrl: './department-wise-analytics.scss',
 })
-export class AnalyticsComponent {
+export class DepartmentWiseAnalyticsComponent {
   private readonly analyticsService = inject(AnalyticsService);
   private readonly toast = inject(ToastService);
   private readonly tokenStorage = inject(TokenStorageService);

@@ -3,6 +3,7 @@ import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { TokenStorageService } from '../../../services/auth.api.service';
 import { AnalyticsService } from '../../../services/analytics.service';
+import { NotificationService } from '../../../services/notification.service';
 
 export interface NavItem {
   label: string;
@@ -26,6 +27,9 @@ export class DashboardShellComponent {
   private readonly router = inject(Router);
   private readonly elementRef = inject(ElementRef);
   private readonly analyticsService = inject(AnalyticsService);
+  private readonly notificationService = inject(NotificationService);
+
+  readonly unreadCount = this.notificationService.unreadCount;
 
   readonly dynamicNavItems = computed(() => {
     const items = this.navItems();
@@ -73,6 +77,30 @@ export class DashboardShellComponent {
   logout(): void {
     this.tokenStorage.clear();
     this.router.navigate(['/login']);
+  }
+
+  goToNotifications(): void {
+    const role = this.tokenStorage.getRole();
+    if (!role) return;
+
+    let path = '';
+    switch (role) {
+      case 'EMPLOYEE':
+        path = '/employee/notifications';
+        break;
+      case 'GRO':
+        path = '/gro/notifications';
+        break;
+      case 'ADMIN':
+        path = '/admin/notifications';
+        break;
+      case 'DEPARTMENT_HEAD':
+        path = '/dept-head/notifications';
+        break;
+      default:
+        return;
+    }
+    this.router.navigate([path]);
   }
 
   @HostListener('document:click', ['$event'])

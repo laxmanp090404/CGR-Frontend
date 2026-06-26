@@ -1,0 +1,188 @@
+<app-dashboard-shell [navItems]="navItems()" title="Notifications">
+  <div class="page-header-row">
+    <div>
+      <h2 class="section-title">Notifications</h2>
+      <p class="section-desc">Stay informed about updates on your filed complaints and assignments.</p>
+    </div>
+    <div class="page-header-actions">
+      <button class="btn-primary btn-icon-text" (click)="markAllAsRead()" [disabled]="isLoading() || totalCount() === 0">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        Mark All as Read
+      </button>
+    </div>
+  </div>
+
+  <div class="filter-card">
+    <div class="filter-bar">
+      <!-- Read-status tabs -->
+      <div class="tabs-group">
+        <button class="tab-btn" [class.active]="filterIsRead() === null" (click)="onFilterChange(null)">All</button>
+        <button class="tab-btn" [class.active]="filterIsRead() === false" (click)="onFilterChange(false)">Unread</button>
+        <button class="tab-btn" [class.active]="filterIsRead() === true" (click)="onFilterChange(true)">Read</button>
+      </div>
+
+      <div class="page-size-container">
+        <label for="notifPageSize" class="page-size-label">Items per page:</label>
+        <select
+          id="notifPageSize"
+          class="page-size-select"
+          [ngModel]="pageSizeDropdownValue()"
+          (ngModelChange)="onDropdownPageSizeChange($event)"
+        >
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="custom">Custom...</option>
+        </select>
+        @if (isCustomPageSize()) {
+          <input
+            type="number"
+            min="1"
+            class="page-size-input"
+            [ngModel]="pageSize()"
+            (ngModelChange)="onCustomPageSizeChange($event)"
+            placeholder="Size"
+          />
+        }
+      </div>
+    </div>
+  </div>
+
+  @if (selectedCount() > 0) {
+    <div class="selection-action-bar">
+      <span class="selection-count">{{ selectedCount() }} selected</span>
+      <button class="btn-primary btn-sm btn-icon-text" (click)="markSelectedAsRead()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        Mark as Read
+      </button>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <app-table-skeleton [cols]="5" [rows]="8" />
+  } @else {
+    @if (notifications().length === 0) {
+      <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        <h3>No notifications found</h3>
+        <p>You are completely up to date.</p>
+      </div>
+    } @else {
+      <div class="table-card">
+        <div class="table-wrapper">
+          <table class="data-table notifications-table" id="notifications-table">
+            <thead>
+              <tr>
+                <th class="checkbox-col">
+                  <label class="custom-checkbox-label">
+                    <input
+                      type="checkbox"
+                      [checked]="isAllSelected()"
+                      (change)="toggleSelectAll()"
+                      class="custom-checkbox"
+                    />
+                    <span class="custom-checkbox-box"></span>
+                  </label>
+                </th>
+                <th class="status-col"></th>
+                <th class="content-col">Notification</th>
+                <th class="date-col">Received</th>
+                <th class="actions-col"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of notifications(); track item.notificationId) {
+                <tr
+                  [class.unread-row]="!item.isRead"
+                  [class.selected-row]="selectedIds().has(item.notificationId)"
+                  (click)="onNotificationClick(item)"
+                  class="notif-row"
+                  [id]="'notif-row-' + item.notificationId"
+                >
+                  <td class="checkbox-col" (click)="$event.stopPropagation()">
+                    <label class="custom-checkbox-label">
+                      <input
+                        type="checkbox"
+                        [checked]="selectedIds().has(item.notificationId)"
+                        (change)="toggleSelect(item.notificationId, $event)"
+                        class="custom-checkbox"
+                      />
+                      <span class="custom-checkbox-box"></span>
+                    </label>
+                  </td>
+                  <td class="status-col">
+                    @if (!item.isRead) {
+                      <span class="unread-dot" title="Unread"></span>
+                    }
+                  </td>
+                  <td class="content-col">
+                    <div class="notif-title">{{ item.title }}</div>
+                    <div class="notif-message">{{ item.message }}</div>
+                  </td>
+                  <td class="date-col">
+                    {{ item.createdAt | date: 'dd-MM-yyyy hh:mm a' }}
+                  </td>
+                  <td class="actions-col" (click)="$event.stopPropagation()">
+                    @if (!item.isRead) {
+                      <button
+                        class="action-btn-circle"
+                        (click)="markSingleRead(item.notificationId, $event)"
+                        title="Mark as Read"
+                        aria-label="Mark as Read"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (totalPages() > 1) {
+          <div class="pagination">
+            <button class="page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)" id="notif-prev-page">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            @for (pageNum of pageNumbers(); track pageNum) {
+              <button
+                class="page-btn"
+                [class.page-btn--active]="pageNum === currentPage()"
+                (click)="goToPage(pageNum)"
+                [id]="'notif-page-' + pageNum"
+              >{{ pageNum }}</button>
+            }
+            <button class="page-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)" id="notif-next-page">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        }
+
+        <div class="table-meta">
+          Showing {{ notifications().length }} of {{ totalCount() }} notifications &mdash; Page {{ currentPage() }} of {{ totalPages() }}
+        </div>
+      </div>
+    }
+  }
+</app-dashboard-shell>

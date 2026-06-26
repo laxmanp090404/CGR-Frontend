@@ -11,7 +11,7 @@ import { DepartmentComplaintsComponent } from './components/complaints/departmen
 import { RaiseComplaintComponent } from './components/complaints/raise-complaint/raise-complaint';
 import { ComplaintDetailComponent } from './components/complaints/complaint-detail/complaint-detail';
 import { ComplaintRequestsComponent } from './components/complaints/complaint-requests/complaint-requests';
-import { AnalyticsComponent } from './components/dashboards/analytics/analytics';
+import { DepartmentWiseAnalyticsComponent } from './components/dashboards/department-wise-analytics/department-wise-analytics';
 import { authGuard, roleGuard, guestGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -23,6 +23,7 @@ export const routes: Routes = [
   { path: 'employee/raise-complaint', component: RaiseComplaintComponent,       canActivate: [authGuard, roleGuard], data: { roles: ['EMPLOYEE'] } },
   { path: 'employee/my-complaints',   component: MyFiledComplaintsComponent,    canActivate: [authGuard, roleGuard], data: { roles: ['EMPLOYEE'] } },
   { path: 'employee/complaints/:id',  component: ComplaintDetailComponent,      canActivate: [authGuard, roleGuard], data: { roles: ['EMPLOYEE'] } },
+  { path: 'employee/notifications',   loadComponent: () => import('./components/notifications/notifications').then(m => m.NotificationsComponent), canActivate: [authGuard, roleGuard], data: { roles: ['EMPLOYEE'] } },
 
   // GRO
   { path: 'gro/dashboard',           component: GroDashboardComponent,       canActivate: [authGuard, roleGuard], data: { roles: ['GRO'] } },
@@ -31,14 +32,16 @@ export const routes: Routes = [
   { path: 'gro/my-work-queue',       component: MyWorkQueueComponent,        canActivate: [authGuard, roleGuard], data: { roles: ['GRO'] } },
   { path: 'gro/complaints/:id',      component: ComplaintDetailComponent,    canActivate: [authGuard, roleGuard], data: { roles: ['GRO'] } },
   { path: 'gro/complaint-requests',  component: ComplaintRequestsComponent,  canActivate: [authGuard, roleGuard], data: { roles: ['GRO'] } },
+  { path: 'gro/notifications',       loadComponent: () => import('./components/notifications/notifications').then(m => m.NotificationsComponent), canActivate: [authGuard, roleGuard], data: { roles: ['GRO'] } },
 
   // Admin
   { path: 'admin/dashboard',       component: AdminDashboardComponent,     canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
   { path: 'admin/view-complaints', component: MyFiledComplaintsComponent,   canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
   { path: 'admin/my-work-queue',   component: MyWorkQueueComponent,         canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
   { path: 'admin/complaints/:id',  component: ComplaintDetailComponent,     canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
-  { path: 'admin/analytics',       component: AnalyticsComponent,           canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
+  { path: 'admin/department-wise-analytics', component: DepartmentWiseAnalyticsComponent, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
   { path: 'admin/requests',        component: ComplaintRequestsComponent,  canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
+  { path: 'admin/notifications',   loadComponent: () => import('./components/notifications/notifications').then(m => m.NotificationsComponent), canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
 
   // Department Head
   { path: 'dept-head/dashboard',             component: DeptHeadDashboardComponent,    canActivate: [authGuard, roleGuard], data: { roles: ['DEPARTMENT_HEAD'] } },
@@ -48,6 +51,7 @@ export const routes: Routes = [
   { path: 'dept-head/raise-complaint',       component: RaiseComplaintComponent,       canActivate: [authGuard, roleGuard], data: { roles: ['DEPARTMENT_HEAD'] } },
   { path: 'dept-head/complaints/:id',        component: ComplaintDetailComponent,      canActivate: [authGuard, roleGuard], data: { roles: ['DEPARTMENT_HEAD'] } },
   { path: 'dept-head/complaint-requests',    component: ComplaintRequestsComponent,    canActivate: [authGuard, roleGuard], data: { roles: ['DEPARTMENT_HEAD'] } },
+  { path: 'dept-head/notifications',         loadComponent: () => import('./components/notifications/notifications').then(m => m.NotificationsComponent), canActivate: [authGuard, roleGuard], data: { roles: ['DEPARTMENT_HEAD'] } },
 
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: '**', redirectTo: 'login' },

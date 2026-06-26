@@ -36,7 +36,7 @@ export function getNavItems(role: Role): NavItem[] {
         { label: 'Role Requests', route: '/admin/role-requests', icon: 'profile', badge: 0 },
         { label: 'Employees', route: '/admin/employees', icon: 'employees' },
         { label: 'Departments', route: '/admin/departments', icon: 'departments' },
-        { label: 'Analytics', route: '/admin/analytics', icon: 'chart' },
+        { label: 'Department-wise Analytics', route: '/admin/department-wise-analytics', icon: 'chart' },
       ];
     default:
       return [];
