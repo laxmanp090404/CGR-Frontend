@@ -25,6 +25,11 @@ export interface DepartmentLookupDto {
   departmentName: string;
 }
 
+export interface RequestStatusDto {
+  requestStatusId: number;
+  statusName: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class LookupService {
   private readonly http = inject(HttpClient);
@@ -55,5 +60,9 @@ export class LookupService {
 
   getRoles(): Observable<any[]> {
     return this.http.get<any[]>(`${baseUrl}/api/LookUp/roles`);
+  }
+
+  getRequestStatuses(): Observable<RequestStatusDto[]> {
+    return this.http.get<RequestStatusDto[]>(`${baseUrl}/api/LookUp/request-statuses`);
   }
 }

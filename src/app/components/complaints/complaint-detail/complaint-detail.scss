@@ -545,6 +545,12 @@ button.attachment-file-card {
   max-height: 90vh;
   overflow: hidden;
 }
+
+.modal-container--preview {
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
 @keyframes modalEnter {
   from {
     opacity: 0;
@@ -753,6 +759,7 @@ button.attachment-file-card {
   }
 }
 
+
 .btn-action {
   flex-shrink: 0;
   display: inline-flex;
@@ -765,44 +772,118 @@ button.attachment-file-card {
   font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
   white-space: nowrap;
+  position: relative;
+  overflow: hidden;
 
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
 
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      120deg,
+      transparent 20%,
+      rgba(255, 255, 255, 0.12) 50%,
+      transparent 80%
+    );
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+
+    &::after {
+      opacity: 1;
+    }
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  // Primary
   &--primary {
-    background-color: var(--color-primary-container, #0f2d5e);
+    background: var(--color-primary-container, #0f2d5e);
     color: #fff;
     border-color: var(--color-primary-container, #0f2d5e);
-    &:hover:not(:disabled) { background-color: var(--color-primary, #00183f); box-shadow: var(--shadow-hover); }
+
+    &:hover:not(:disabled) {
+      background: var(--color-primary, #00183f);
+      border-color: var(--color-primary, #00183f);
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(15, 45, 94, 0.35);
+    }
   }
 
+  // Success
   &--success {
-    background-color: #003713;
+    background: #003713;
     color: #26ac52;
     border-color: rgba(38, 172, 82, 0.3);
-    &:hover:not(:disabled) { background-color: #002909; box-shadow: var(--shadow-hover); }
+
+    &:hover:not(:disabled) {
+      background: #00491c;
+      color: #42d96d;
+      border-color: #26ac52;
+      box-shadow: 0 8px 20px rgba(38, 172, 82, 0.3);
+    }
   }
 
+  // Warning
   &--warning {
-    background-color: rgba(254, 166, 25, 0.15);
+    background: rgba(254, 166, 25, 0.15);
     color: #855300;
     border-color: rgba(254, 166, 25, 0.4);
-    &:hover:not(:disabled) { background-color: rgba(254, 166, 25, 0.25); box-shadow: var(--shadow-hover); }
+
+    &:hover:not(:disabled) {
+      background: rgba(254, 166, 25, 0.28);
+      color: #6f4300;
+      border-color: #fea619;
+      box-shadow: 0 8px 20px rgba(254, 166, 25, 0.3);
+    }
   }
 
+  // Neutral
   &--neutral {
-    background-color: var(--color-surface-container-high, #e2e8f8);
+    background: var(--color-surface-container-high, #e2e8f8);
     color: var(--color-on-surface-variant, #44474f);
     border-color: var(--color-outline-variant, #c4c6d0);
-    &:hover:not(:disabled) { background-color: var(--color-surface-container-highest, #dce2f3); box-shadow: var(--shadow-hover); }
+
+    &:hover:not(:disabled) {
+      background: var(--color-surface-container-highest, #d5ddf2);
+      color: #1f2937;
+      border-color: #9ca3af;
+      box-shadow: 0 8px 20px rgba(100, 116, 139, 0.2);
+    }
   }
 
+  // Danger
   &--danger {
-    background-color: rgba(186, 26, 26, 0.1);
+    background: rgba(186, 26, 26, 0.1);
     color: #ba1a1a;
     border-color: rgba(186, 26, 26, 0.25);
-    &:hover:not(:disabled) { background-color: rgba(186, 26, 26, 0.18); box-shadow: var(--shadow-hover); }
+
+    &:hover:not(:disabled) {
+      background: rgba(186, 26, 26, 0.2);
+      color: #941414;
+      border-color: #ba1a1a;
+      box-shadow: 0 8px 20px rgba(186, 26, 26, 0.3);
+    }
   }
 }
 

@@ -12,9 +12,7 @@ import {
   Role,
 } from '../models/auth.model';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TokenStorageService — persists session to localStorage
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 const SESSION_KEY = 'cgr_session';
 

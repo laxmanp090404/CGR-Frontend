@@ -1,6 +1,4 @@
-// ─────────────────────────────────────────────────────────────
-// Auth Models — all authentication-related interfaces & types
-// ─────────────────────────────────────────────────────────────
+
 
 export type Role = 'ADMIN' | 'EMPLOYEE' | 'GRO' | 'DEPARTMENT_HEAD';
 
@@ -35,10 +33,8 @@ export interface RegisterRequest {
   departmentId?:  number;
 }
 
-/** Register response mirrors login response (token + user info) */
 export type RegisterResponse = LoginResponse;
 
-// ── Session (stored token payload) ────────────────────────────
 export interface AuthSession {
   token:        string;
   employeeName: string;

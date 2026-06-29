@@ -490,3 +490,14 @@
     line-height: 1.6;
   }
 }
+
+@media (max-width: 1023px) {
+  .notifications-table {
+    .date-col {
+      width: 110px;
+      white-space: normal;
+      font-size: 12px;
+      text-align: right;
+    }
+  }
+}

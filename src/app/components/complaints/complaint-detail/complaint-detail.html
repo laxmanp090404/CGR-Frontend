@@ -412,7 +412,7 @@
   <!-- ── Attachment Preview Modal ────────────────────────────────────────── -->
   @if (previewAttachment()) {
     <div class="modal-overlay" (click)="closePreview()">
-      <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-container modal-container--preview" (click)="$event.stopPropagation()">
         <div class="modal-header">
           <h3 class="modal-title">{{ previewAttachment()?.originalFileName }}</h3>
           <div class="modal-actions">

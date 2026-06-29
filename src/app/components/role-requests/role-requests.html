@@ -1,0 +1,449 @@
+<app-dashboard-shell [navItems]="navItems()" [title]="isAdmin() ? 'Role Requests Management' : 'My Profile & Role'">
+
+
+  @if (isAdmin()) {
+    <!-- Page Header -->
+    <div class="page-header-row">
+      <div>
+        <h2 class="section-title">Role Requests</h2>
+        <p class="section-desc">Review, approve, or reject employee role upgrade requests across the organization.</p>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-card">
+      <div class="filter-grid">
+        <!-- Status Filter -->
+        <div class="filter-item">
+          <label class="form-label" for="status-filter">Request Status</label>
+          <select
+            id="status-filter"
+            class="form-input"
+            [value]="selectedStatusId() ?? ''"
+            (change)="onStatusFilterChange($any($event.target).value)"
+          >
+            <option value="">All Statuses</option>
+            @for (status of requestStatuses(); track status.requestStatusId) {
+              <option [value]="status.requestStatusId">{{ status.statusName }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- Bottom Actions Row -->
+      <div class="filter-actions-row">
+        <div class="page-size-container">
+          <label for="pageSize" class="page-size-label">Page Size:</label>
+          <select id="pageSize" class="form-input page-size-select" [value]="pageSizeDropdownValue()"
+            (change)="onDropdownPageSizeChange($any($event.target).value)">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="custom">Custom...</option>
+          </select>
+          @if (isCustomPageSize()) {
+            <input type="number" min="1" class="form-input page-size-input" [value]="localPageSize()"
+              (input)="onCustomPageSizeChange($any($event.target).value)" placeholder="Size" style="width: 80px;" />
+          }
+        </div>
+
+        <button class="btn-reset" (click)="resetFilters()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 4v6h-6"></path>
+            <path d="M1 20v-6h6"></path>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          Clear Filters
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Table -->
+    @if (isLoading()) {
+      <app-table-skeleton [cols]="7" [rows]="10" />
+    } @else {
+      @if (requests().length === 0) {
+        <div class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <h3>No role requests found</h3>
+          <p>No requests match the selected filters.</p>
+        </div>
+      } @else {
+        <div class="table-card">
+          <div class="table-wrapper">
+            <table class="data-table" id="role-requests-table">
+              <thead>
+                <tr>
+                  <th class="id-header">ID</th>
+                  <th>Employee</th>
+                  <th>Current Role</th>
+                  <th>Requested Role</th>
+                  <th>Status</th>
+                  <th>Submitted</th>
+                  <th class="actions-header">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (req of requests(); track req.roleRequestId) {
+                  <tr>
+                    <td class="id-cell">#{{ req.roleRequestId }}</td>
+                    <td class="name-cell">{{ req.employeeName }}</td>
+                    <td>
+                      <span class="role-badge">{{ req.currentRoleName }}</span>
+                    </td>
+                    <td>
+                      <span class="role-badge role-badge--target">{{ req.requestedRoleName }}</span>
+                    </td>
+                    <td>
+                      <span class="status-badge" [class]="getStatusClass(req.requestStatusName)">
+                        {{ req.requestStatusName }}
+                      </span>
+                    </td>
+                    <td class="date-cell">{{ req.createdAt | date:'mediumDate' }}</td>
+                    <td>
+                      <div class="actions-cell">
+                        @if (req.requestStatusName === 'PENDING') {
+                          <button
+                            class="btn-icon btn-icon--success"
+                            (click)="openApproveModal(req)"
+                            title="Approve Request"
+                            aria-label="Approve role request"
+                          >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                          </button>
+
+                          <button
+                            class="btn-icon btn-icon--danger"
+                            (click)="openRejectModal(req)"
+                            title="Reject Request"
+                            aria-label="Reject role request"
+                          >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <line x1="18" y1="6" x2="6" y2="18"></line>
+                              <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                          </button>
+                        } @else {
+                          <span class="reviewed-label">
+                            {{ req.reviewedByName ? 'By ' + req.reviewedByName : '—' }}
+                          </span>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          @if (totalPages() > 1) {
+            <div class="pagination">
+              <button
+                class="page-btn"
+                [disabled]="currentPage() === 1"
+                (click)="goToPage(currentPage() - 1)"
+                aria-label="Previous page"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+              @for (p of pages; track p) {
+                <button
+                  class="page-btn"
+                  [class.page-btn--active]="p === currentPage()"
+                  (click)="goToPage(p)"
+                >
+                  {{ p }}
+                </button>
+              }
+              <button
+                class="page-btn"
+                [disabled]="currentPage() === totalPages()"
+                (click)="goToPage(currentPage() + 1)"
+                aria-label="Next page"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+          }
+
+          <div class="table-meta">
+            Showing {{ requests().length }} of {{ totalCount() }} requests &mdash; Page {{ currentPage() }} of {{ totalPages() || 1 }}
+          </div>
+        </div>
+      }
+    }
+
+    <!-- ──────── Approve Modal ──────── -->
+    @if (isApproveModalOpen() && selectedRequest()) {
+      <div class="modal-overlay" (click)="closeApproveModal()">
+        <div class="modal-container" (click)="$event.stopPropagation()">
+          <div class="modal-header modal-header--success">
+            <h3 class="modal-title">Approve Role Request</h3>
+            <button class="modal-close-btn" (click)="closeApproveModal()" aria-label="Close dialog">&times;</button>
+          </div>
+
+          <div class="modal-body">
+            <div class="detail-grid">
+              <div class="detail-row">
+                <span class="detail-label">Employee</span>
+                <span class="detail-value text-bold">{{ selectedRequest()?.employeeName }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Current Role</span>
+                <span class="detail-value">{{ selectedRequest()?.currentRoleName }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Current Department</span>
+                <span class="detail-value">{{ selectedRequest()?.currentDepartmentName || 'Nil' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Requested Role</span>
+                <span class="detail-value text-bold">{{ selectedRequest()?.requestedRoleName }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Submitted</span>
+                <span class="detail-value">{{ selectedRequest()?.createdAt | date:'medium' }}</span>
+              </div>
+            </div>
+
+            <!-- Department Assignment -->
+            <div class="form-field">
+              <label class="form-label" for="approve-dept">Assign Department (if needed)</label>
+              <select
+                id="approve-dept"
+                class="form-input"
+                [ngModel]="approveDeptId()"
+                (ngModelChange)="approveDeptId.set($event)"
+              >
+                <option [ngValue]="null">— No department —</option>
+                @for (dept of departments(); track dept.departmentId) {
+                  <option [ngValue]="dept.departmentId">{{ dept.departmentName }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Remarks -->
+            <div class="form-field">
+              <label class="form-label" for="approve-remarks">Remarks (optional)</label>
+              <textarea
+                id="approve-remarks"
+                class="form-input form-textarea"
+                rows="3"
+                placeholder="Add optional approval notes..."
+                [ngModel]="approveRemarks()"
+                (ngModelChange)="approveRemarks.set($event)"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeApproveModal()" [disabled]="isActionLoading()">Cancel</button>
+            <button type="button" class="btn btn-success" (click)="submitApproval()" [disabled]="isActionLoading()">
+              @if (isActionLoading()) {
+                <span class="spinner"></span>
+              } @else {
+                Approve Request
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ──────── Reject Modal ──────── -->
+    @if (isRejectModalOpen() && selectedRequest()) {
+      <div class="modal-overlay" (click)="closeRejectModal()">
+        <div class="modal-container" (click)="$event.stopPropagation()">
+          <div class="modal-header modal-header--danger">
+            <h3 class="modal-title">Reject Role Request</h3>
+            <button class="modal-close-btn" (click)="closeRejectModal()" aria-label="Close dialog">&times;</button>
+          </div>
+
+          <div class="modal-body">
+            <div class="detail-grid">
+              <div class="detail-row">
+                <span class="detail-label">Employee</span>
+                <span class="detail-value text-bold">{{ selectedRequest()?.employeeName }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Requested Role</span>
+                <span class="detail-value text-bold">{{ selectedRequest()?.requestedRoleName }}</span>
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label class="form-label" for="reject-remarks">Rejection Remarks (optional)</label>
+              <textarea
+                id="reject-remarks"
+                class="form-input form-textarea"
+                rows="3"
+                placeholder="Explain why this request is being rejected..."
+                [ngModel]="rejectRemarks()"
+                (ngModelChange)="rejectRemarks.set($event)"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeRejectModal()" [disabled]="isActionLoading()">Cancel</button>
+            <button type="button" class="btn btn-danger" (click)="submitRejection()" [disabled]="isActionLoading()">
+              @if (isActionLoading()) {
+                <span class="spinner"></span>
+              } @else {
+                Reject Request
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- ============================================================
+       EMPLOYEE / GRO / DEPT HEAD VIEW — Profile & Role Request
+       ============================================================ -->
+  @if (!isAdmin()) {
+    @if (isProfileLoading()) {
+      <app-table-skeleton [cols]="4" [rows]="3" />
+    } @else {
+      <!-- Profile Card -->
+      @if (myProfile(); as profile) {
+        <div class="profile-section">
+          <div class="profile-card">
+            <div class="profile-avatar">
+              {{ profile.employeeName.charAt(0).toUpperCase() }}
+            </div>
+            <div class="profile-info">
+              <h2 class="profile-name">{{ profile.employeeName }}</h2>
+              <div class="profile-meta">
+                <span class="profile-role-badge">{{ profile.roleName }}</span>
+                @if (profile.departmentName) {
+                  <span class="profile-dept">{{ profile.departmentName }}</span>
+                }
+              </div>
+              <div class="profile-details">
+                <span class="profile-detail">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                  </svg>
+                  {{ profile.email }}
+                </span>
+                <span class="profile-detail">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                  </svg>
+                  {{ profile.mobileNumber }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Role Request Section -->
+        <div class="role-request-section">
+          <h3 class="subsection-title">Request Role Upgrade</h3>
+          <p class="subsection-desc">Select the role you'd like to upgrade to. Only valid upgrade paths are allowed by the system.</p>
+
+          <div class="segmented-control role-picker">
+            @for (role of availableRoles(); track role.roleId) {
+              <button
+                type="button"
+                class="segment-btn"
+                [class.active]="selectedRoleId() === role.roleId"
+                [class.current-role]="profile.roleId === role.roleId"
+                [disabled]="profile.roleId === role.roleId"
+                (click)="selectRole(role.roleId)"
+              >
+                @if (profile.roleId === role.roleId) {
+                  <span class="current-indicator">Current</span>
+                }
+                {{ role.roleName }}
+              </button>
+            }
+          </div>
+
+          <button
+            class="btn btn-primary submit-request-btn"
+            [disabled]="!selectedRoleId() || isSubmitting()"
+            (click)="submitRoleRequest()"
+          >
+            @if (isSubmitting()) {
+              <span class="spinner"></span>
+            } @else {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+              Submit Request
+            }
+          </button>
+        </div>
+      }
+
+      <!-- My Request History -->
+      <div class="history-section">
+        <h3 class="subsection-title">Request History</h3>
+        @if (myRequests().length === 0) {
+          <div class="empty-state empty-state--compact">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            <p>You haven't submitted any role requests yet.</p>
+          </div>
+        } @else {
+          <div class="table-card">
+            <div class="table-wrapper">
+              <table class="data-table" id="my-requests-table">
+                <thead>
+                  <tr>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th>Reviewed By</th>
+                    <th>Remarks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (req of myRequests(); track req.roleRequestId) {
+                    <tr>
+                      <td>
+                        <span class="role-badge">{{ req.currentRoleName }}</span>
+                      </td>
+                      <td>
+                        <span class="role-badge role-badge--target">{{ req.requestedRoleName }}</span>
+                      </td>
+                      <td>
+                        <span class="status-badge" [class]="getStatusClass(req.requestStatusName)">
+                          {{ req.requestStatusName }}
+                        </span>
+                      </td>
+                      <td class="date-cell">{{ req.createdAt | date:'mediumDate' }}</td>
+                      <td>{{ req.reviewedByName || '—' }}</td>
+                      <td class="remarks-cell">{{ req.remarks || '—' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+</app-dashboard-shell>

@@ -23,6 +23,7 @@ export interface StatusConfig {
 // Status IDs — mirror the backend constants
 const STATUS_ASSIGNED            = 2;
 const STATUS_IN_PROGRESS         = 3;
+const STATUS_ESCALATED           = 4;
 const STATUS_RESOLVED            = 5;
 const STATUS_EXTERNALLY_ESCALATED = 9;
 
@@ -76,13 +77,13 @@ export class ComplaintDetailComponent implements OnInit {
 
   // ── Permission Computed Signals ────────────────────────────────────────────
 
-  /** Can the current user start progress? Current handler + ASSIGNED status */
+  /** Can the current user start progress? Current handler + ASSIGNED or ESCALATED status */
   readonly canStartProgress = computed(() => {
     const c = this.complaint();
     const empId = this.currentEmployeeId();
     if (!c) return false;
     return (
-      c.statusId === STATUS_ASSIGNED &&
+      (c.statusId === STATUS_ASSIGNED || c.statusId === STATUS_ESCALATED) &&
       c.currentHandlerEmployeeId === empId
     );
   });

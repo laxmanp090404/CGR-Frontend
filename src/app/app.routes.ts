@@ -13,9 +13,9 @@ import { ComplaintDetailComponent } from './components/complaints/complaint-deta
 import { ComplaintRequestsComponent } from './components/complaints/complaint-requests/complaint-requests';
 import { DepartmentWiseAnalyticsComponent } from './components/dashboards/department-wise-analytics/department-wise-analytics';
 import { EmployeesComponent } from './components/employees/employees';
-import { DepartmentsPlaceholderComponent } from './components/departments-placeholder/departments-placeholder';
-import { CategoriesPlaceholderComponent } from './components/categories-placeholder/categories-placeholder';
-import { RoleRequestsPlaceholderComponent } from './components/role-requests-placeholder/role-requests-placeholder';
+import { DepartmentsComponent } from './components/departments/departments';
+import { CategoriesComponent } from './components/categories/categories';
+import { RoleRequestsComponent } from './components/role-requests/role-requests';
 import { authGuard, roleGuard, guestGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -28,6 +28,7 @@ export const routes: Routes = [
   { path: 'employee/my-complaints',   component: MyFiledComplaintsComponent,    canActivate: [authGuard, roleGuard], data: { roles: ['EMPLOYEE'] } },
   { path: 'employee/complaints/:id',  component: ComplaintDetailComponent,      canActivate: [authGuard, roleGuard], data: { roles: ['EMPLOYEE'] } },
   { path: 'employee/notifications',   loadComponent: () => import('./components/notifications/notifications').then(m => m.NotificationsComponent), canActivate: [authGuard, roleGuard], data: { roles: ['EMPLOYEE'] } },
+  { path: 'employee/profile',         component: RoleRequestsComponent,         canActivate: [authGuard, roleGuard], data: { roles: ['EMPLOYEE'] } },
 
   // GRO
   { path: 'gro/dashboard',           component: GroDashboardComponent,       canActivate: [authGuard, roleGuard], data: { roles: ['GRO'] } },
@@ -37,6 +38,7 @@ export const routes: Routes = [
   { path: 'gro/complaints/:id',      component: ComplaintDetailComponent,    canActivate: [authGuard, roleGuard], data: { roles: ['GRO'] } },
   { path: 'gro/complaint-requests',  component: ComplaintRequestsComponent,  canActivate: [authGuard, roleGuard], data: { roles: ['GRO'] } },
   { path: 'gro/notifications',       loadComponent: () => import('./components/notifications/notifications').then(m => m.NotificationsComponent), canActivate: [authGuard, roleGuard], data: { roles: ['GRO'] } },
+  { path: 'gro/profile',             component: RoleRequestsComponent,         canActivate: [authGuard, roleGuard], data: { roles: ['GRO'] } },
 
   // Admin
   { path: 'admin/dashboard',       component: AdminDashboardComponent,     canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
@@ -47,9 +49,10 @@ export const routes: Routes = [
   { path: 'admin/requests',        component: ComplaintRequestsComponent,  canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
   { path: 'admin/notifications',   loadComponent: () => import('./components/notifications/notifications').then(m => m.NotificationsComponent), canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
   { path: 'admin/employees',       component: EmployeesComponent,          canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
-  { path: 'admin/departments',     component: DepartmentsPlaceholderComponent, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
-  { path: 'admin/categories',      component: CategoriesPlaceholderComponent, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
-  { path: 'admin/role-requests',   component: RoleRequestsPlaceholderComponent, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
+  { path: 'admin/departments',     component: DepartmentsComponent,        canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
+  { path: 'admin/categories',      component: CategoriesComponent,         canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
+  { path: 'admin/role-requests',   component: RoleRequestsComponent,       canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
+  { path: 'admin/gro-workload',    loadComponent: () => import('./components/gro-workload/gro-workload').then(m => m.GroWorkloadComponent), canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
 
   // Department Head
   { path: 'dept-head/dashboard',             component: DeptHeadDashboardComponent,    canActivate: [authGuard, roleGuard], data: { roles: ['DEPARTMENT_HEAD'] } },
@@ -59,7 +62,9 @@ export const routes: Routes = [
   { path: 'dept-head/raise-complaint',       component: RaiseComplaintComponent,       canActivate: [authGuard, roleGuard], data: { roles: ['DEPARTMENT_HEAD'] } },
   { path: 'dept-head/complaints/:id',        component: ComplaintDetailComponent,      canActivate: [authGuard, roleGuard], data: { roles: ['DEPARTMENT_HEAD'] } },
   { path: 'dept-head/complaint-requests',    component: ComplaintRequestsComponent,    canActivate: [authGuard, roleGuard], data: { roles: ['DEPARTMENT_HEAD'] } },
+  { path: 'dept-head/gro-workload',          loadComponent: () => import('./components/gro-workload/gro-workload').then(m => m.GroWorkloadComponent), canActivate: [authGuard, roleGuard], data: { roles: ['DEPARTMENT_HEAD'] } },
   { path: 'dept-head/notifications',         loadComponent: () => import('./components/notifications/notifications').then(m => m.NotificationsComponent), canActivate: [authGuard, roleGuard], data: { roles: ['DEPARTMENT_HEAD'] } },
+  { path: 'dept-head/profile',               component: RoleRequestsComponent,         canActivate: [authGuard, roleGuard], data: { roles: ['DEPARTMENT_HEAD'] } },
 
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: '**', redirectTo: 'login' },
