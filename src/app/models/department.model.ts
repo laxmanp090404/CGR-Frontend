@@ -6,3 +6,14 @@ export interface DepartmentDto {
   isActive: boolean;
   createdAt: string;
 }
+
+export interface CreateDepartmentDto {
+  departmentName: string;
+  departmentHeadEmployeeId?: number | null;
+}
+
+export interface UpdateDepartmentDto {
+  departmentName: string;
+  departmentHeadEmployeeId?: number | null;
+  isActive: boolean;
+}

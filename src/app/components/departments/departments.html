@@ -1,0 +1,322 @@
+<app-dashboard-shell [navItems]="navItems()" title="Departments Module">
+  <!-- Page Header -->
+  <div class="page-header-row">
+    <div>
+      <h2 class="section-title">Departments Directory</h2>
+      <p class="section-desc">Manage system departments, view details, assign department heads, or configure activation statuses.</p>
+    </div>
+    <button class="btn btn-primary" id="add-dept-btn" (click)="openCreateModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      Add Department
+    </button>
+  </div>
+
+  <!-- Filters & Search Bar -->
+  <div class="filter-card">
+    <div class="filter-grid">
+      <!-- Active Status Filter -->
+      <div class="filter-item">
+        <label class="form-label" for="status-filter">Status Filter</label>
+        <select
+          id="status-filter"
+          class="form-input"
+          [value]="activeStatus()"
+          (change)="onStatusChange($any($event.target).value)"
+        >
+          <option value="all">All Departments</option>
+          <option value="active">Active Only</option>
+          <option value="inactive">Inactive Only</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Bottom Actions Row -->
+    <div class="filter-actions-row">
+      <div></div>
+      <button class="btn-reset" (click)="resetFilters()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"></path>
+          <path d="M1 20v-6h6"></path>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        Clear Filters
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Table View -->
+  @if (isLoading()) {
+    <app-table-skeleton [cols]="5" [rows]="8" />
+  } @else {
+    @if (departments().length === 0) {
+      <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="9"></line><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="15" y2="17"></line></svg>
+        <h3>No departments found</h3>
+        <p>No departments match the chosen active status filter.</p>
+      </div>
+    } @else {
+      <div class="table-card">
+        <div class="table-wrapper">
+          <table class="data-table" id="departments-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Department Name</th>
+                <th>Department Head</th>
+                <th>Status</th>
+                <th class="actions-header">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (dept of departments(); track dept.departmentId) {
+                <tr [class.inactive-row]="!dept.isActive">
+                  <td class="id-cell">#{{ dept.departmentId }}</td>
+                  <td class="name-cell">{{ dept.departmentName }}</td>
+                  <td>
+                    @if (dept.departmentHeadEmployeeName) {
+                      <span class="head-badge">{{ dept.departmentHeadEmployeeName }}</span>
+                    } @else {
+                      <span class="text-muted italic">No head assigned</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="status-badge" [class.badge--active]="dept.isActive" [class.badge--inactive]="!dept.isActive">
+                      {{ dept.isActive ? 'Active' : 'Inactive' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="actions-cell">
+                      <button
+                        class="btn-icon btn-icon--primary"
+                        (click)="openViewModal(dept)"
+                        title="View Details"
+                        data-tooltip="View Details"
+                        aria-label="View department details"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                      </button>
+
+                      <button
+                        class="btn-icon btn-icon--primary"
+                        (click)="openEditModal(dept)"
+                        title="Edit Details"
+                        data-tooltip="Edit Details"
+                        aria-label="Edit department details"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-meta">
+          Showing {{ departments().length }} departments
+        </div>
+      </div>
+    }
+  }
+
+  <!-- Modal Overlay: View Department Info -->
+  @if (isViewModalOpen(); as currentDept) {
+    <div class="modal-overlay" (click)="closeViewModal()">
+      <div class="modal-container" (click)="$event.stopPropagation()">
+        <div class="modal-header modal-header--info">
+          <h3 class="modal-title">Department Information</h3>
+          <button class="modal-close-btn" (click)="closeViewModal()" aria-label="Close dialog">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          @if (selectedDept(); as detailed) {
+            <div class="detail-grid">
+              <div class="detail-row">
+                <span class="detail-label">Department ID</span>
+                <span class="detail-value code-sm">#{{ detailed.departmentId }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Department Name</span>
+                <span class="detail-value text-bold">{{ detailed.departmentName }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Active Status</span>
+                <span class="detail-value">
+                  <span class="status-badge" [class.badge--active]="detailed.isActive" [class.badge--inactive]="!detailed.isActive">
+                    {{ detailed.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Department Head</span>
+                <span class="detail-value">
+                  @if (detailed.departmentHeadEmployeeName) {
+                    <span class="text-bold">{{ detailed.departmentHeadEmployeeName }}</span>
+                    <span class="detail-sub-info">(ID: #{{ detailed.departmentHeadEmployeeId }})</span>
+                  } @else {
+                    <span class="text-muted italic">No head assigned</span>
+                  }
+                </span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Created Date</span>
+                <span class="detail-value">{{ detailed.createdAt | date: 'dd-MM-yyyy hh:mm a' }}</span>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeViewModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Overlay: Create Department -->
+  @if (isCreateModalOpen()) {
+    <div class="modal-overlay" (click)="closeCreateModal()">
+      <div class="modal-container" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Add New Department</h3>
+          <button class="modal-close-btn" (click)="closeCreateModal()" aria-label="Close dialog">&times;</button>
+        </div>
+
+        <form [formGroup]="createForm" (ngSubmit)="onCreateSubmit()">
+          <div class="modal-body">
+            <!-- Department Name -->
+            <div class="form-field">
+              <label class="form-label" for="create-name">Department Name</label>
+              <input
+                id="create-name"
+                type="text"
+                class="form-input"
+                formControlName="departmentName"
+                placeholder="Enter department name"
+              />
+              @if (createName.touched && createName.invalid) {
+                <span class="field-error">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                  Department name is required (max 100 characters).
+                </span>
+              }
+            </div>
+
+            <!-- Department Head (Optional Dropdown) -->
+            <div class="form-field">
+              <label class="form-label" for="create-head">Department Head (Optional)</label>
+              <select
+                id="create-head"
+                class="form-input"
+                formControlName="departmentHeadEmployeeId"
+              >
+                <option value="">None - No head assigned</option>
+                @for (emp of eligibleHeads(); track emp.employeeId) {
+                  <option [value]="emp.employeeId">{{ emp.employeeName }} (ID: #{{ emp.employeeId }})</option>
+                }
+              </select>
+              <span class="field-desc">Only active employees with the role <code>EMPLOYEE</code> are eligible to be assigned as new heads.</span>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeCreateModal()" [disabled]="isActionLoading()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="createForm.invalid || isActionLoading()">
+              @if (isActionLoading()) {
+                <span class="spinner"></span>
+              } @else {
+                Add Department
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Overlay: Edit/Update Department -->
+  @if (isEditModalOpen()) {
+    <div class="modal-overlay" (click)="closeEditModal()">
+      <div class="modal-container" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Edit Department Details</h3>
+          <button class="modal-close-btn" (click)="closeEditModal()" aria-label="Close dialog">&times;</button>
+        </div>
+
+        <form [formGroup]="editForm" (ngSubmit)="onEditSubmit()">
+          <div class="modal-body">
+            <!-- Department Name -->
+            <div class="form-field">
+              <label class="form-label" for="edit-name">Department Name</label>
+              <input
+                id="edit-name"
+                type="text"
+                class="form-input"
+                formControlName="departmentName"
+                placeholder="Enter department name"
+              />
+              @if (editName.touched && editName.invalid) {
+                <span class="field-error">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                  Department name is required (max 100 characters).
+                </span>
+              }
+            </div>
+
+            <!-- Department Head (Optional Dropdown) -->
+            <div class="form-field">
+              <label class="form-label" for="edit-head">Department Head</label>
+              <select
+                id="edit-head"
+                class="form-input"
+                formControlName="departmentHeadEmployeeId"
+              >
+                <option value="">None - No head assigned</option>
+                @for (emp of getEditEligibleHeads(); track emp.employeeId) {
+                  <option [value]="emp.employeeId">{{ emp.employeeName }} (ID: #{{ emp.employeeId }})</option>
+                }
+              </select>
+              <span class="field-desc">Only active employees with the role <code>EMPLOYEE</code> (or the current head) are selectable.</span>
+            </div>
+
+            <!-- Active Status -->
+            <div class="form-field">
+              <label class="form-label" for="edit-active">Active Status</label>
+              <select
+                id="edit-active"
+                class="form-input"
+                formControlName="isActive"
+              >
+                <option [ngValue]="true">Active</option>
+                <option [ngValue]="false">Inactive</option>
+              </select>
+              <span class="field-desc text-error">Deactivating a department requires removing the head first. It cannot contain active categories.</span>
+              
+              @if (editForm.get('isActive')?.value === false || editForm.get('isActive')?.value === 'false') {
+                <div class="safety-check-box" style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+                  <input type="checkbox" id="dept-safety" [checked]="safetyChecked()" (change)="safetyChecked.set($any($event.target).checked)" />
+                  <label for="dept-safety" style="font-size: 13px; font-weight: 500; cursor: pointer; color: var(--color-error, #ba1a1a);">
+                    I understand the consequences and want to continue deactivating
+                  </label>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeEditModal()" [disabled]="isActionLoading()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="editForm.invalid || isActionLoading() || ((editForm.get('isActive')?.value === false || editForm.get('isActive')?.value === 'false') && !safetyChecked())">
+              @if (isActionLoading()) {
+                <span class="spinner"></span>
+              } @else {
+                Save Changes
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</app-dashboard-shell>
