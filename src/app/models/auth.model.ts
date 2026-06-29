@@ -18,6 +18,7 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   token:        string;
+  refreshToken: string;
   employeeName: string;
   role:         Role;
   employeeId:   number;
@@ -37,7 +38,13 @@ export type RegisterResponse = LoginResponse;
 
 export interface AuthSession {
   token:        string;
+  refreshToken: string;
   employeeName: string;
   role:         Role;
   employeeId:   number;
+}
+
+export interface TokenRefreshRequest {
+  accessToken: string;
+  refreshToken: string;
 }

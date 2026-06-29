@@ -9,9 +9,7 @@ import {
 import { TokenStorageService } from '../services/auth.api.service';
 import { Role, ROLE_DASHBOARD_ROUTE } from '../models/auth.model';
 
-// ─────────────────────────────────────────────────────────────────────────────
 // authGuard — blocks unauthenticated users → /login
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const authGuard: CanActivateFn = (
   _route: ActivatedRouteSnapshot,
@@ -27,11 +25,11 @@ export const authGuard: CanActivateFn = (
   return router.createUrlTree(['/login']);
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 // roleGuard — ensures user's role matches the route's required roles
 // Route data shape: { roles: Role[] }
 // On mismatch → navigates to user's own dashboard
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 export const roleGuard: CanActivateFn = (
   route: ActivatedRouteSnapshot,
@@ -52,10 +50,9 @@ export const roleGuard: CanActivateFn = (
   return router.createUrlTree([fallback]);
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // guestGuard — prevents logged-in users from visiting /login or /register
 // → redirects to role-based dashboard
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 export const guestGuard: CanActivateFn = (
   _route: ActivatedRouteSnapshot,

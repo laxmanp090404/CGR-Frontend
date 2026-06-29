@@ -35,12 +35,12 @@ export class RoleRequestsComponent implements OnInit {
   private readonly lookupService = inject(LookupService);
   private readonly toast = inject(ToastService);
 
-  // ----- Role / Nav -----
+  // - Role / Nav -
   readonly userRole = signal<Role>(this.tokenStorage.getRole() ?? 'EMPLOYEE');
   readonly navItems = signal<NavItem[]>(getNavItems(this.userRole()));
   readonly isAdmin = computed(() => this.userRole() === 'ADMIN');
 
-  // ----- Admin View State -----
+  // - Admin View State -
   readonly isLoading = signal(true);
   readonly requests = signal<RoleRequestDto[]>([]);
   readonly totalCount = signal(0);
@@ -52,24 +52,52 @@ export class RoleRequestsComponent implements OnInit {
   readonly localPageSize = signal<number>(10);
   readonly selectedStatusId = signal<number | null>(null);
 
-  // ----- Lookup Data -----
+  // - Lookup Data -
   readonly requestStatuses = signal<RequestStatusDto[]>([]);
   readonly roles = signal<any[]>([]);
   readonly departments = signal<DepartmentLookupDto[]>([]);
 
-  // ----- Employee Profile View State -----
+  // - Employee Profile View State -
   readonly myProfile = signal<EmployeeDto | null>(null);
   readonly myRequests = signal<RoleRequestDto[]>([]);
   readonly isProfileLoading = signal(true);
   readonly isSubmitting = signal(false);
   readonly selectedRoleId = signal<number | null>(null);
 
+  // - Employee Profile Request History Paging & Filtering -
+  readonly myRequestsCurrentPage = signal(1);
+  readonly myRequestsPageSize = signal(10);
+  readonly myRequestsIsCustomPageSize = signal(false);
+  readonly myRequestsPageSizeDropdownValue = signal('10');
+  readonly myRequestsLocalPageSize = signal(10);
+  readonly myRequestsSelectedStatusId = signal<number | null>(null);
+
+  readonly filteredMyRequests = computed(() => {
+    let list = this.myRequests();
+    const statusId = this.myRequestsSelectedStatusId();
+    if (statusId !== null) {
+      list = list.filter(r => r.requestStatusId === statusId);
+    }
+    return list;
+  });
+
+  readonly paginatedMyRequests = computed(() => {
+    const list = this.filteredMyRequests();
+    const page = this.myRequestsCurrentPage();
+    const size = this.myRequestsPageSize();
+    const start = (page - 1) * size;
+    return list.slice(start, start + size);
+  });
+
+  readonly myRequestsTotalCount = computed(() => this.filteredMyRequests().length);
+  readonly myRequestsTotalPages = computed(() => Math.ceil(this.myRequestsTotalCount() / this.myRequestsPageSize()));
+
   // Available roles for segmented picker (all except Admin=4)
   readonly availableRoles = computed(() => {
     return this.roles().filter((r: any) => r.roleId !== 4);
   });
 
-  // ----- Admin Approve/Reject Modal State -----
+  // - Admin Approve/Reject Modal State -
   readonly isApproveModalOpen = signal(false);
   readonly isRejectModalOpen = signal(false);
   readonly selectedRequest = signal<RoleRequestDto | null>(null);
@@ -173,6 +201,52 @@ export class RoleRequestsComponent implements OnInit {
     if (page < 1 || page > this.totalPages()) return;
     this.currentPage.set(page);
     this.loadPagedRequests();
+  }
+
+  onMyRequestsStatusFilterChange(val: string): void {
+    this.myRequestsSelectedStatusId.set(val ? Number(val) : null);
+    this.myRequestsCurrentPage.set(1);
+  }
+
+  onMyRequestsDropdownPageSizeChange(value: string): void {
+    this.myRequestsPageSizeDropdownValue.set(value);
+    if (value === 'custom') {
+      this.myRequestsIsCustomPageSize.set(true);
+    } else {
+      this.myRequestsIsCustomPageSize.set(false);
+      const size = Number(value) || 10;
+      this.myRequestsPageSize.set(size);
+      this.myRequestsCurrentPage.set(1);
+    }
+  }
+
+  onMyRequestsCustomPageSizeChange(value: any): void {
+    const size = Number(value);
+    if (size && size > 0) {
+      this.myRequestsPageSize.set(size);
+      this.myRequestsCurrentPage.set(1);
+    }
+  }
+
+  resetMyRequestsFilters(): void {
+    this.myRequestsSelectedStatusId.set(null);
+    this.myRequestsPageSize.set(10);
+    this.myRequestsIsCustomPageSize.set(false);
+    this.myRequestsPageSizeDropdownValue.set('10');
+    this.myRequestsLocalPageSize.set(10);
+    this.myRequestsCurrentPage.set(1);
+  }
+
+  goToMyRequestsPage(page: number): void {
+    if (page < 1 || page > this.myRequestsTotalPages()) return;
+    this.myRequestsCurrentPage.set(page);
+  }
+
+  get myRequestsPages(): number[] {
+    const count = this.myRequestsTotalPages();
+    const arr: number[] = [];
+    for (let i = 1; i <= count; i++) arr.push(i);
+    return arr;
   }
 
   get pages(): number[] {
@@ -322,9 +396,9 @@ export class RoleRequestsComponent implements OnInit {
 
   getStatusClass(statusName: string): string {
     const name = statusName.toUpperCase();
-    if (name === 'PENDING') return 'badge--pending';
-    if (name === 'APPROVED') return 'badge--approved';
-    if (name === 'REJECTED') return 'badge--rejected';
+    if (name === 'PENDING') return 'badgepending';
+    if (name === 'APPROVED') return 'badgeapproved';
+    if (name === 'REJECTED') return 'badgerejected';
     return '';
   }
 }

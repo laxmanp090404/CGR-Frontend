@@ -405,42 +405,142 @@
             <p>You haven't submitted any role requests yet.</p>
           </div>
         } @else {
-          <div class="table-card">
-            <div class="table-wrapper">
-              <table class="data-table" id="my-requests-table">
-                <thead>
-                  <tr>
-                    <th>From</th>
-                    <th>To</th>
-                    <th>Status</th>
-                    <th>Submitted</th>
-                    <th>Reviewed By</th>
-                    <th>Remarks</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (req of myRequests(); track req.roleRequestId) {
-                    <tr>
-                      <td>
-                        <span class="role-badge">{{ req.currentRoleName }}</span>
-                      </td>
-                      <td>
-                        <span class="role-badge role-badge--target">{{ req.requestedRoleName }}</span>
-                      </td>
-                      <td>
-                        <span class="status-badge" [class]="getStatusClass(req.requestStatusName)">
-                          {{ req.requestStatusName }}
-                        </span>
-                      </td>
-                      <td class="date-cell">{{ req.createdAt | date:'mediumDate' }}</td>
-                      <td>{{ req.reviewedByName || '—' }}</td>
-                      <td class="remarks-cell">{{ req.remarks || '—' }}</td>
-                    </tr>
+          <!-- Filters -->
+          <div class="filter-card">
+            <div class="filter-grid">
+              <!-- Status Filter -->
+              <div class="filter-item">
+                <label class="form-label" for="my-status-filter">Request Status</label>
+                <select
+                  id="my-status-filter"
+                  class="form-input"
+                  [value]="myRequestsSelectedStatusId() ?? ''"
+                  (change)="onMyRequestsStatusFilterChange($any($event.target).value)"
+                >
+                  <option value="">All Statuses</option>
+                  @for (status of requestStatuses(); track status.requestStatusId) {
+                    <option [value]="status.requestStatusId">{{ status.statusName }}</option>
                   }
-                </tbody>
-              </table>
+                </select>
+              </div>
+            </div>
+
+            <!-- Bottom Actions Row -->
+            <div class="filter-actions-row">
+              <div class="page-size-container">
+                <label for="myPageSize" class="page-size-label">Page Size:</label>
+                <select id="myPageSize" class="form-input page-size-select" [value]="myRequestsPageSizeDropdownValue()"
+                  (change)="onMyRequestsDropdownPageSizeChange($any($event.target).value)">
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="custom">Custom...</option>
+                </select>
+                @if (myRequestsIsCustomPageSize()) {
+                  <input type="number" min="1" class="form-input page-size-input" [value]="myRequestsLocalPageSize()"
+                    (input)="myRequestsLocalPageSize.set($any($event.target).value); onMyRequestsCustomPageSizeChange($any($event.target).value)" placeholder="Size" style="width: 80px;" />
+                }
+              </div>
+
+              <button class="btn-reset" (click)="resetMyRequestsFilters()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 4v6h-6"></path>
+                  <path d="M1 20v-6h6"></path>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                Clear Filters
+              </button>
             </div>
           </div>
+
+          @if (filteredMyRequests().length === 0) {
+            <div class="empty-state empty-state--compact">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <h3>No role requests found</h3>
+              <p>No requests match the selected filters.</p>
+            </div>
+          } @else {
+            <div class="table-card">
+              <div class="table-wrapper">
+                <table class="data-table" id="my-requests-table">
+                  <thead>
+                    <tr>
+                      <th>From</th>
+                      <th>To</th>
+                      <th>Status</th>
+                      <th>Submitted</th>
+                      <th>Reviewed By</th>
+                      <th>Remarks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (req of paginatedMyRequests(); track req.roleRequestId) {
+                      <tr>
+                        <td>
+                          <span class="role-badge">{{ req.currentRoleName }}</span>
+                        </td>
+                        <td>
+                          <span class="role-badge role-badge--target">{{ req.requestedRoleName }}</span>
+                        </td>
+                        <td>
+                          <span class="status-badge" [class]="getStatusClass(req.requestStatusName)">
+                            {{ req.requestStatusName }}
+                          </span>
+                        </td>
+                        <td class="date-cell">{{ req.createdAt | date:'mediumDate' }}</td>
+                        <td>{{ req.reviewedByName || '—' }}</td>
+                        <td class="remarks-cell">{{ req.remarks || '—' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Pagination -->
+              @if (myRequestsTotalPages() > 1) {
+                <div class="pagination">
+                  <button
+                    class="page-btn"
+                    [disabled]="myRequestsCurrentPage() === 1"
+                    (click)="goToMyRequestsPage(myRequestsCurrentPage() - 1)"
+                    aria-label="Previous page"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                  </button>
+                  @for (p of myRequestsPages; track p) {
+                    <button
+                      class="page-btn"
+                      [class.page-btn--active]="p === myRequestsCurrentPage()"
+                      (click)="goToMyRequestsPage(p)"
+                    >
+                      {{ p }}
+                    </button>
+                  }
+                  <button
+                    class="page-btn"
+                    [disabled]="myRequestsCurrentPage() === myRequestsTotalPages()"
+                    (click)="goToMyRequestsPage(myRequestsCurrentPage() + 1)"
+                    aria-label="Next page"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
+                </div>
+              }
+
+              <div class="table-meta">
+                Showing {{ paginatedMyRequests().length }} of {{ myRequestsTotalCount() }} requests &mdash; Page {{ myRequestsCurrentPage() }} of {{ myRequestsTotalPages() || 1 }}
+              </div>
+            </div>
+          }
         }
       </div>
     }

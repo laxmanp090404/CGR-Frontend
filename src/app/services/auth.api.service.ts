@@ -10,6 +10,7 @@ import {
   RegisterRequest,
   RegisterResponse,
   Role,
+  TokenRefreshRequest,
 } from '../models/auth.model';
 
 
@@ -46,6 +47,10 @@ export class TokenStorageService {
     return this._session()?.token ?? null;
   }
 
+  getRefreshToken(): string | null {
+    return this._session()?.refreshToken ?? null;
+  }
+
   getRole(): Role | null {
     return this._session()?.role ?? null;
   }
@@ -78,9 +83,9 @@ export class TokenStorageService {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 // AuthApiService — login & register HTTP calls
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 @Injectable({ providedIn: 'root' })
 export class AuthApiService {
@@ -99,6 +104,12 @@ export class AuthApiService {
   /** POST /api/auth/register */
   register(req: RegisterRequest): Observable<RegisterResponse> {
     return this.http.post<RegisterResponse>(`${this.apiBase}/register`, req).pipe(
+      tap((res) => this.tokenStorage.save(res))
+    );
+  }
+
+  refreshToken(req: TokenRefreshRequest): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiBase}/refresh`, req).pipe(
       tap((res) => this.tokenStorage.save(res))
     );
   }

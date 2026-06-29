@@ -1,8 +1,9 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { baseUrl } from '../../environment';
+import { TokenStorageService } from './auth.api.service';
 import {
   AdminDashboardDto,
   MyDashboardDto,
@@ -17,9 +18,20 @@ import {
 export class AnalyticsService {
   private readonly http = inject(HttpClient);
   private readonly apiBase = `${baseUrl}/api/analytics`;
+  private readonly tokenStorage = inject(TokenStorageService);
 
   readonly pendingComplaintRequests = signal<number | null>(null);
   readonly pendingRoleRequests = signal<number | null>(null);
+
+  constructor() {
+    effect(() => {
+      const session = this.tokenStorage.session();
+      if (!session) {
+        this.pendingComplaintRequests.set(null);
+        this.pendingRoleRequests.set(null);
+      }
+    });
+  }
 
   getAdminDashboard(): Observable<AdminDashboardDto> {
     return this.http.get<AdminDashboardDto>(`${this.apiBase}/admin-dashboard`);
