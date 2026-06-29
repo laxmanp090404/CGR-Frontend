@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 
 import { EmployeeService } from '../../services/employee.service';
 import { LookupService, DepartmentLookupDto } from '../../services/lookup.service';
+import { RoleRequestService } from '../../services/role-request.service';
 import { ToastService } from '../../shared/services/toast.service';
 import { DashboardShellComponent, NavItem } from '../../shared/components/dashboard-shell/dashboard-shell';
 import { TableSkeletonComponent } from '../../shared/components/table-skeleton/table-skeleton';
@@ -28,6 +29,7 @@ export class EmployeesComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly employeeService = inject(EmployeeService);
   private readonly lookupService = inject(LookupService);
+  private readonly roleRequestService = inject(RoleRequestService);
   private readonly toast = inject(ToastService);
 
   readonly navItems = signal<NavItem[]>(getNavItems('ADMIN'));
@@ -39,7 +41,11 @@ export class EmployeesComponent implements OnInit {
   readonly totalCount = signal(0);
   readonly totalPages = signal(0);
   readonly currentPage = signal(1);
-  readonly pageSize = 10;
+  readonly pageSize = signal<number>(10);
+  readonly isCustomPageSize = signal<boolean>(false);
+  readonly pageSizeDropdownValue = signal<string>('10');
+  readonly localPageSize = signal<number>(10);
+  readonly safetyChecked = signal<boolean>(false);
 
   // ── Filter Signals ───────────────────────────────────────────
   readonly search = signal('');
@@ -53,16 +59,28 @@ export class EmployeesComponent implements OnInit {
 
   // ── Modal State Signals ──────────────────────────────────────
   readonly isEditModalOpen = signal(false);
+  readonly isRoleModalOpen = signal(false);
   readonly selectedEmployee = signal<EmployeeDto | null>(null);
   readonly isConfirmModalOpen = signal(false);
   readonly confirmAction = signal<'deactivate' | 'restore' | null>(null);
   readonly employeeToToggle = signal<EmployeeDto | null>(null);
+
+  // Available roles for segmented picker (all except Admin=4)
+  readonly availableRoles = computed(() => {
+    return this.roles().filter((r: any) => r.roleId !== 4);
+  });
 
   // ── Forms ────────────────────────────────────────────────────
   readonly editForm: FormGroup = this.fb.group({
     employeeName: ['', [Validators.required, Validators.minLength(2)]],
     email:        ['', [Validators.required, Validators.email]],
     mobileNumber: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
+  });
+
+  readonly roleForm: FormGroup = this.fb.group({
+    targetRoleId: [null, [Validators.required]],
+    departmentId: [null],
+    remarks:      ['', [Validators.maxLength(100)]],
   });
 
   get employeeName() { return this.editForm.get('employeeName')!; }
@@ -99,7 +117,7 @@ export class EmployeesComponent implements OnInit {
     this.employeeService
       .getEmployees(
         this.currentPage(),
-        this.pageSize,
+        this.pageSize(),
         isActiveParam,
         this.selectedRoleId(),
         this.selectedDeptId(),
@@ -109,7 +127,7 @@ export class EmployeesComponent implements OnInit {
         next: (res) => {
           this.employees.set(res.items);
           this.totalCount.set(res.totalCount);
-          this.totalPages.set(Math.ceil(res.totalCount / this.pageSize));
+          this.totalPages.set(Math.ceil(res.totalCount / this.pageSize()));
           this.isLoading.set(false);
         },
         error: () => {
@@ -142,6 +160,41 @@ export class EmployeesComponent implements OnInit {
   onDeptChange(val: string): void {
     const parsed = val ? Number(val) : null;
     this.selectedDeptId.set(parsed);
+    this.currentPage.set(1);
+    this.loadEmployees();
+  }
+
+  onDropdownPageSizeChange(value: string): void {
+    this.pageSizeDropdownValue.set(value);
+    if (value === 'custom') {
+      this.isCustomPageSize.set(true);
+    } else {
+      this.isCustomPageSize.set(false);
+      const size = Number(value) || 10;
+      this.pageSize.set(size);
+      this.currentPage.set(1);
+      this.loadEmployees();
+    }
+  }
+
+  onCustomPageSizeChange(value: any): void {
+    const size = Number(value);
+    if (size && size > 0) {
+      this.pageSize.set(size);
+      this.currentPage.set(1);
+      this.loadEmployees();
+    }
+  }
+
+  resetFilters(): void {
+    this.search.set('');
+    this.activeStatus.set('all');
+    this.selectedRoleId.set(null);
+    this.selectedDeptId.set(null);
+    this.pageSize.set(10);
+    this.isCustomPageSize.set(false);
+    this.pageSizeDropdownValue.set('10');
+    this.localPageSize.set(10);
     this.currentPage.set(1);
     this.loadEmployees();
   }
@@ -213,6 +266,7 @@ export class EmployeesComponent implements OnInit {
   openConfirmModal(emp: EmployeeDto, action: 'deactivate' | 'restore'): void {
     this.employeeToToggle.set(emp);
     this.confirmAction.set(action);
+    this.safetyChecked.set(false);
     this.isConfirmModalOpen.set(true);
   }
 
@@ -220,6 +274,7 @@ export class EmployeesComponent implements OnInit {
     this.isConfirmModalOpen.set(false);
     this.employeeToToggle.set(null);
     this.confirmAction.set(null);
+    this.safetyChecked.set(false);
   }
 
   onConfirmActionSubmit(): void {
@@ -258,5 +313,53 @@ export class EmployeesComponent implements OnInit {
         },
       });
     }
+  }
+
+  // ── Manual Role Change Modal Actions ───────────────────────
+  openRoleModal(emp: EmployeeDto): void {
+    this.selectedEmployee.set(emp);
+    this.roleForm.reset({
+      targetRoleId: emp.roleId,
+      departmentId: emp.departmentId || null,
+      remarks: '',
+    });
+    this.isRoleModalOpen.set(true);
+  }
+
+  closeRoleModal(): void {
+    this.isRoleModalOpen.set(false);
+    this.selectedEmployee.set(null);
+  }
+
+  onRoleSubmit(): void {
+    if (this.roleForm.invalid) {
+      this.roleForm.markAllAsTouched();
+      return;
+    }
+
+    const emp = this.selectedEmployee();
+    if (!emp) return;
+
+    this.isActionLoading.set(true);
+    const formVals = this.roleForm.value;
+    const dto = {
+      targetRoleId: Number(formVals.targetRoleId),
+      departmentId: formVals.departmentId ? Number(formVals.departmentId) : null,
+      remarks: formVals.remarks ? formVals.remarks.trim() : null,
+    };
+
+    this.roleRequestService.manualRoleChange(emp.employeeId, dto).subscribe({
+      next: () => {
+        this.toast.success(`Successfully updated role for ${emp.employeeName}`);
+        this.isActionLoading.set(false);
+        this.closeRoleModal();
+        this.loadEmployees();
+      },
+      error: (err) => {
+        const message = err?.error?.message || 'Failed to update employee role.';
+        this.toast.error(message);
+        this.isActionLoading.set(false);
+      },
+    });
   }
 }

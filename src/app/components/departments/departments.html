@@ -206,17 +206,67 @@
 
             <!-- Department Head (Optional Dropdown) -->
             <div class="form-field">
-              <label class="form-label" for="create-head">Department Head (Optional)</label>
-              <select
-                id="create-head"
-                class="form-input"
-                formControlName="departmentHeadEmployeeId"
-              >
-                <option value="">None - No head assigned</option>
-                @for (emp of eligibleHeads(); track emp.employeeId) {
-                  <option [value]="emp.employeeId">{{ emp.employeeName }} (ID: #{{ emp.employeeId }})</option>
+              <label class="form-label">Department Head (Optional)</label>
+              <div class="custom-select-container">
+                <button
+                  type="button"
+                  class="custom-select-trigger"
+                  [class.custom-select-trigger--open]="isDropdownOpen()"
+                  (click)="toggleDropdown($event)"
+                >
+                  <span class="custom-select-trigger__label">{{ selectedHeadName() }}</span>
+                  <svg class="custom-select-trigger__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+
+                @if (isDropdownOpen()) {
+                  <div class="custom-select-dropdown">
+                    <div class="custom-select-search-wrapper">
+                      <svg class="custom-select-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                      </svg>
+                      <input
+                        type="text"
+                        class="custom-select-search-input"
+                        placeholder="Search employees..."
+                        [value]="dropdownSearchText()"
+                        (input)="onSearchTextChange($event)"
+                        (click)="$event.stopPropagation()"
+                        #searchInput
+                      />
+                    </div>
+                    <div class="custom-select-options-list" (scroll)="onDropdownScroll($event)">
+                      <div
+                        class="custom-select-option"
+                        [class.custom-select-option--selected]="!createForm.get('departmentHeadEmployeeId')?.value"
+                        (click)="selectHead(null)"
+                      >
+                        None - No head assigned
+                      </div>
+                      @for (emp of eligibleHeads(); track emp.employeeId) {
+                        <div
+                          class="custom-select-option"
+                          [class.custom-select-option--selected]="createForm.get('departmentHeadEmployeeId')?.value == emp.employeeId"
+                          (click)="selectHead(emp)"
+                        >
+                          {{ emp.employeeName }} <span class="custom-select-option__id">(ID: #{{ emp.employeeId }})</span>
+                        </div>
+                      }
+                      @if (dropdownIsLoading()) {
+                        <div class="custom-select-loading">
+                          <span class="spinner spinner-small"></span>
+                          <span>Loading...</span>
+                        </div>
+                      }
+                      @if (!dropdownIsLoading() && eligibleHeads().length === 0) {
+                        <div class="custom-select-empty">No matching employees found</div>
+                      }
+                    </div>
+                  </div>
                 }
-              </select>
+              </div>
               <span class="field-desc">Only active employees with the role <code>EMPLOYEE</code> are eligible to be assigned as new heads.</span>
             </div>
           </div>
@@ -267,17 +317,67 @@
 
             <!-- Department Head (Optional Dropdown) -->
             <div class="form-field">
-              <label class="form-label" for="edit-head">Department Head</label>
-              <select
-                id="edit-head"
-                class="form-input"
-                formControlName="departmentHeadEmployeeId"
-              >
-                <option value="">None - No head assigned</option>
-                @for (emp of getEditEligibleHeads(); track emp.employeeId) {
-                  <option [value]="emp.employeeId">{{ emp.employeeName }} (ID: #{{ emp.employeeId }})</option>
+              <label class="form-label">Department Head</label>
+              <div class="custom-select-container">
+                <button
+                  type="button"
+                  class="custom-select-trigger"
+                  [class.custom-select-trigger--open]="isDropdownOpen()"
+                  (click)="toggleDropdown($event)"
+                >
+                  <span class="custom-select-trigger__label">{{ selectedHeadName() }}</span>
+                  <svg class="custom-select-trigger__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+
+                @if (isDropdownOpen()) {
+                  <div class="custom-select-dropdown">
+                    <div class="custom-select-search-wrapper">
+                      <svg class="custom-select-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                      </svg>
+                      <input
+                        type="text"
+                        class="custom-select-search-input"
+                        placeholder="Search employees..."
+                        [value]="dropdownSearchText()"
+                        (input)="onSearchTextChange($event)"
+                        (click)="$event.stopPropagation()"
+                        #searchInput
+                      />
+                    </div>
+                    <div class="custom-select-options-list" (scroll)="onDropdownScroll($event)">
+                      <div
+                        class="custom-select-option"
+                        [class.custom-select-option--selected]="!editForm.get('departmentHeadEmployeeId')?.value"
+                        (click)="selectHead(null)"
+                      >
+                        None - No head assigned
+                      </div>
+                      @for (emp of getEditEligibleHeads(); track emp.employeeId) {
+                        <div
+                          class="custom-select-option"
+                          [class.custom-select-option--selected]="editForm.get('departmentHeadEmployeeId')?.value == emp.employeeId"
+                          (click)="selectHead(emp)"
+                        >
+                          {{ emp.employeeName }} <span class="custom-select-option__id">(ID: #{{ emp.employeeId }})</span>
+                        </div>
+                      }
+                      @if (dropdownIsLoading()) {
+                        <div class="custom-select-loading">
+                          <span class="spinner spinner-small"></span>
+                          <span>Loading...</span>
+                        </div>
+                      }
+                      @if (!dropdownIsLoading() && getEditEligibleHeads().length === 0) {
+                        <div class="custom-select-empty">No matching employees found</div>
+                      }
+                    </div>
+                  </div>
                 }
-              </select>
+              </div>
               <span class="field-desc">Only active employees with the role <code>EMPLOYEE</code> (or the current head) are selectable.</span>
             </div>
 

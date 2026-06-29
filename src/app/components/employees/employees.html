@@ -72,6 +72,35 @@
         </select>
       </div>
     </div>
+
+    <!-- Bottom Actions Row -->
+    <div class="filter-actions-row">
+      <div class="page-size-container">
+        <label for="pageSize" class="page-size-label">Page Size:</label>
+        <select id="pageSize" class="form-input page-size-select" [value]="pageSizeDropdownValue()"
+          (change)="onDropdownPageSizeChange($any($event.target).value)">
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="custom">Custom...</option>
+        </select>
+        @if (isCustomPageSize()) {
+          <input type="number" min="1" class="form-input page-size-input" [value]="localPageSize()"
+            (input)="onCustomPageSizeChange($any($event.target).value)" placeholder="Size" />
+        }
+      </div>
+
+      <button class="btn-reset" (click)="resetFilters()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"></path>
+          <path d="M1 20v-6h6"></path>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        Clear Filters
+      </button>
+    </div>
   </div>
 
   <!-- Main Table View -->
@@ -127,6 +156,23 @@
                       >
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                       </button>
+
+                      @if (emp.roleName !== 'ADMIN') {
+                        <button
+                          class="btn-icon btn-icon--info"
+                          (click)="openRoleModal(emp)"
+                          title="Change Role"
+                          data-tooltip="Change Role"
+                          aria-label="Change employee role"
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                          </svg>
+                        </button>
+                      }
 
                       @if (emp.isActive) {
                         <button
@@ -304,6 +350,12 @@
             <p class="confirm-subtext text-error">
               This will disable their account access immediately. Ensure they have no active department head assignments or open complaints.
             </p>
+            <div class="safety-check-box">
+              <input type="checkbox" id="deactivate-safety" [checked]="safetyChecked()" (change)="safetyChecked.set($any($event.target).checked)" />
+              <label for="deactivate-safety" style="font-size: 13px; font-weight: 500; cursor: pointer; color: var(--color-error, #ba1a1a);">
+                I understand the consequences and want to continue
+              </label>
+            </div>
           } @else {
             <p class="confirm-subtext text-muted">
               Their active login capabilities will be completely restored.
@@ -319,7 +371,7 @@
             [class.btn-danger]="confirmAction() === 'deactivate'"
             [class.btn-success]="confirmAction() === 'restore'"
             (click)="onConfirmActionSubmit()"
-            [disabled]="isActionLoading()"
+            [disabled]="isActionLoading() || (confirmAction() === 'deactivate' && !safetyChecked())"
           >
             @if (isActionLoading()) {
               <span class="spinner"></span>
@@ -328,6 +380,83 @@
             }
           </button>
         </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Overlay: Direct Manual Role Change -->
+  @if (isRoleModalOpen() && selectedEmployee()) {
+    <div class="modal-overlay" (click)="closeRoleModal()">
+      <div class="modal-container" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Change Employee Role</h3>
+          <button class="modal-close-btn" (click)="closeRoleModal()" aria-label="Close dialog">&times;</button>
+        </div>
+
+        <form [formGroup]="roleForm" (ngSubmit)="onRoleSubmit()">
+          <div class="modal-body">
+            <!-- Info Summary -->
+            <div style="background-color: var(--color-surface-container-low); padding: 12px; border-radius: var(--radius-md); font-size: 13px; line-height: 1.5;">
+              <div>Employee: <strong>{{ selectedEmployee()?.employeeName }}</strong></div>
+              <div>Current Role: <strong>{{ selectedEmployee()?.roleName }}</strong></div>
+              @if (selectedEmployee()?.departmentName) {
+                <div>Current Department: <strong>{{ selectedEmployee()?.departmentName }}</strong></div>
+              }
+            </div>
+
+            <!-- Segmented Selection for Roles (Except Admin) -->
+            <div class="form-field">
+              <label class="form-label">Target Role</label>
+              <div class="segmented-control">
+                @for (role of availableRoles(); track role.roleId) {
+                  <button
+                    type="button"
+                    class="segment-btn"
+                    [class.active]="roleForm.get('targetRoleId')?.value === role.roleId"
+                    (click)="roleForm.patchValue({ targetRoleId: role.roleId })"
+                  >
+                    {{ role.roleName }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Department Selection -->
+            <div class="form-field">
+              <label class="form-label" for="role-dept">Department Assignment</label>
+              <select id="role-dept" class="form-input" formControlName="departmentId">
+                <option [ngValue]="null">No Department</option>
+                @for (dept of departments(); track dept.departmentId) {
+                  <option [ngValue]="dept.departmentId">{{ dept.departmentName }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Remarks -->
+            <div class="form-field">
+              <label class="form-label" for="role-remarks">Admin Remarks (optional)</label>
+              <textarea
+                id="role-remarks"
+                class="form-input"
+                style="resize: vertical; min-height: 60px;"
+                rows="2"
+                formControlName="remarks"
+                placeholder="Enter audit trail remarks..."
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeRoleModal()" [disabled]="isActionLoading()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="roleForm.invalid || isActionLoading()">
+              @if (isActionLoading()) {
+                <span class="spinner"></span>
+              } @else {
+                Change Role
+              }
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   }

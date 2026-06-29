@@ -1,0 +1,180 @@
+<app-dashboard-shell [navItems]="navItems()" [title]="isAdmin() ? 'System: GRO Workload Tracking' : 'GRO Workload'">
+  <div class="workload-container">
+    
+    <!-- Filters Row -->
+    <div class="filters-card">
+      <div class="filters-grid">
+        
+        <!-- Search -->
+        <div class="filter-field">
+          <label class="filter-label" for="search-gro">Search GRO</label>
+          <div class="search-input-wrapper">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              id="search-gro"
+              type="text"
+              class="form-control filter-input"
+              placeholder="Search by name..."
+              [ngModel]="searchQuery()"
+              (ngModelChange)="searchQuery.set($event)"
+            />
+          </div>
+        </div>
+
+        <!-- Department Filter (Admin only) -->
+        @if (isAdmin()) {
+          <div class="filter-field">
+            <label class="filter-label" for="filter-dept">Department</label>
+            <select
+              id="filter-dept"
+              class="form-control filter-select"
+              [ngModel]="selectedDepartmentId()"
+              (ngModelChange)="selectedDepartmentId.set($event ? +$event : null)"
+            >
+              <option [value]="''">All Departments</option>
+              @for (dept of departments(); track dept.departmentId) {
+                <option [value]="dept.departmentId">{{ dept.departmentName }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        <!-- Sorting -->
+        <div class="filter-field">
+          <label class="filter-label" for="sort-by">Sort By</label>
+          <select
+            id="sort-by"
+            class="form-control filter-select"
+            [ngModel]="sortBy()"
+            (ngModelChange)="sortBy.set($event)"
+          >
+            <option value="workload-desc">Workload Score (High to Low)</option>
+            <option value="workload-asc">Workload Score (Low to High)</option>
+            <option value="complaints-desc">Active Complaints (High to Low)</option>
+            <option value="name-asc">Name (A-Z)</option>
+            <option value="name-desc">Name (Z-A)</option>
+          </select>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="filter-actions">
+          <button type="button" class="btn btn-outline" (click)="clearFilters()">Clear Filters</button>
+          <button type="button" class="btn btn-primary" (click)="loadData()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+            </svg>
+            Refresh
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    @if (isLoading()) {
+      <div class="loading-state">
+        <span class="spinner spinner-large"></span>
+        <p>Loading active workload data...</p>
+      </div>
+    } @else if (error()) {
+      <div class="error-state">
+        <svg class="error-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <p class="error-message">{{ error() }}</p>
+        <button class="btn btn-primary" (click)="loadData()">Try Again</button>
+      </div>
+    } @else if (filteredWorkloads().length === 0) {
+      <div class="empty-state">
+        <svg class="empty-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        <p>No GRO workload records found matching the current filters.</p>
+        <button class="btn btn-outline" (click)="clearFilters()">Clear Filters</button>
+      </div>
+    } @else {
+      <!-- Workload Cards Grid -->
+      <div class="workload-grid">
+        @for (gro of filteredWorkloads(); track gro.employeeId) {
+          <div class="workload-card" [ngClass]="getWorkloadClass(gro.weightedScore)">
+            
+            <!-- Card Header -->
+            <div class="card-header">
+              <div class="gro-profile">
+                <div class="gro-avatar">
+                  {{ gro.employeeName.charAt(0).toUpperCase() }}
+                </div>
+                <div class="gro-meta">
+                  <h4 class="gro-name">{{ gro.employeeName }}</h4>
+                  <span class="gro-dept">{{ gro.departmentName }}</span>
+                </div>
+              </div>
+              <span class="badge load-badge" [ngClass]="getWorkloadClass(gro.weightedScore)">
+                {{ getWorkloadLabel(gro.weightedScore) }}
+              </span>
+            </div>
+
+            <!-- Workload Score -->
+            <div class="workload-score-section">
+              <div class="score-label-row">
+                <span class="score-label">Workload Score</span>
+                <span class="score-value">{{ gro.weightedScore }}</span>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" [style.width.%]="gro.weightedScore > 100 ? 100 : gro.weightedScore" [ngClass]="getWorkloadClass(gro.weightedScore)"></div>
+              </div>
+            </div>
+
+            <!-- Total complaints -->
+            <div class="complaints-summary-row">
+              <span class="summary-label">Active Complaints Assigned</span>
+              <span class="summary-count">{{ gro.activeComplaintCount }}</span>
+            </div>
+
+            <!-- Priority Breakdown Grid -->
+            <div class="priority-breakdown">
+              <span class="breakdown-title">Priority Distribution</span>
+              <div class="priority-grid">
+                
+                <div class="priority-pill priority-pill--critical" [class.disabled]="gro.criticalCount === 0">
+                  <span class="pill-dot"></span>
+                  <span class="pill-name">Critical</span>
+                  <span class="pill-count">{{ gro.criticalCount }}</span>
+                </div>
+
+                <div class="priority-pill priority-pill--high" [class.disabled]="gro.highCount === 0">
+                  <span class="pill-dot"></span>
+                  <span class="pill-name">High</span>
+                  <span class="pill-count">{{ gro.highCount }}</span>
+                </div>
+
+                <div class="priority-pill priority-pill--medium" [class.disabled]="gro.mediumCount === 0">
+                  <span class="pill-dot"></span>
+                  <span class="pill-name">Medium</span>
+                  <span class="pill-count">{{ gro.mediumCount }}</span>
+                </div>
+
+                <div class="priority-pill priority-pill--low" [class.disabled]="gro.lowCount === 0">
+                  <span class="pill-dot"></span>
+                  <span class="pill-name">Low</span>
+                  <span class="pill-count">{{ gro.lowCount }}</span>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+</app-dashboard-shell>

@@ -1,6 +1,6 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 import { DepartmentApiService } from '../../services/department.api.service';
@@ -22,6 +22,7 @@ interface SimpleEmployee {
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     RouterModule,
     DashboardShellComponent,
     TableSkeletonComponent,
@@ -37,23 +38,48 @@ export class DepartmentsComponent implements OnInit {
 
   readonly navItems = signal<NavItem[]>(getNavItems('ADMIN'));
 
-  // ── State Signals ────────────────────────────────────────────
+  //  State Signals 
   readonly isLoading = signal(true);
   readonly isActionLoading = signal(false);
   readonly departments = signal<DepartmentDto[]>([]);
   readonly activeStatus = signal<string>('all');
   readonly safetyChecked = signal<boolean>(false);
 
-  // ── Dropdown Choices Signal ──────────────────────────────────
+  //  Dropdown Choices Signal 
   readonly eligibleHeads = signal<SimpleEmployee[]>([]);
 
-  // ── Modal State Signals ──────────────────────────────────────
+  //  Custom Dropdown State Signals 
+  readonly dropdownSearchText = signal<string>('');
+  readonly dropdownPage = signal<number>(1);
+  readonly dropdownHasMore = signal<boolean>(true);
+  readonly dropdownIsLoading = signal<boolean>(false);
+  readonly isDropdownOpen = signal<boolean>(false);
+
+  // Computed signal for selected employee display name
+  readonly selectedHeadName = computed(() => {
+    const isEdit = this.isEditModalOpen();
+    const form = isEdit ? this.editForm : this.createForm;
+    const value = form.get('departmentHeadEmployeeId')?.value;
+    if (!value) return 'None - No head assigned';
+    
+    const found = this.eligibleHeads().find(h => h.employeeId === Number(value));
+    if (found) return found.employeeName;
+
+    const dept = this.selectedDept();
+    if (isEdit && dept && dept.departmentHeadEmployeeId === Number(value)) {
+      return dept.departmentHeadEmployeeName || 'None - No head assigned';
+    }
+
+    return 'None - No head assigned';
+  });
+
+  //  Modal State Signals 
   readonly isCreateModalOpen = signal(false);
   readonly isEditModalOpen = signal(false);
   readonly isViewModalOpen = signal(false);
   readonly selectedDept = signal<DepartmentDto | null>(null);
 
-  // ── Forms ────────────────────────────────────────────────────
+  //  Forms 
   readonly createForm: FormGroup = this.fb.group({
     departmentName: ['', [Validators.required, Validators.maxLength(100)]],
     departmentHeadEmployeeId: [''],
@@ -74,7 +100,6 @@ export class DepartmentsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadDepartments();
-    this.loadEligibleHeads();
   }
 
   loadDepartments(): void {
@@ -99,23 +124,97 @@ export class DepartmentsComponent implements OnInit {
     });
   }
 
-  loadEligibleHeads(): void {
-    // Load active employees with role 'EMPLOYEE' (roleId = 1)
-    this.employeeService.getEmployees(1, 1000, true, 1, null, null).subscribe({
+  loadEligibleHeads(reset: boolean = false): void {
+    if (reset) {
+      this.dropdownPage.set(1);
+      this.dropdownHasMore.set(true);
+      this.eligibleHeads.set([]);
+    }
+
+    if (!this.dropdownHasMore() || this.dropdownIsLoading()) {
+      return;
+    }
+
+    this.dropdownIsLoading.set(true);
+    const page = this.dropdownPage();
+    const searchVal = this.dropdownSearchText().trim();
+
+    this.employeeService.getEmployees(page, 10, true, 1, null, searchVal).subscribe({
       next: (res) => {
         const mapped = res.items.map((emp) => ({
           employeeId: emp.employeeId,
           employeeName: emp.employeeName,
         }));
-        this.eligibleHeads.set(mapped);
+
+        if (page === 1) {
+          this.eligibleHeads.set(mapped);
+        } else {
+          this.eligibleHeads.update(current => [...current, ...mapped]);
+        }
+
+        const totalFetched = this.eligibleHeads().length;
+        this.dropdownHasMore.set(totalFetched < res.totalCount);
+        this.dropdownPage.update(p => p + 1);
+        this.dropdownIsLoading.set(false);
       },
       error: () => {
         this.toast.error('Failed to load eligible department heads.');
+        this.dropdownIsLoading.set(false);
       },
     });
   }
 
-  // ── Filtering Actions ────────────────────────────────────────
+  private searchTimer: any = null;
+  onSearchTextChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const text = input.value;
+    this.dropdownSearchText.set(text);
+
+    if (this.searchTimer) {
+      clearTimeout(this.searchTimer);
+    }
+
+    this.searchTimer = setTimeout(() => {
+      this.loadEligibleHeads(true);
+    }, 300);
+  }
+
+  toggleDropdown(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    const current = this.isDropdownOpen();
+    if (!current) {
+      this.dropdownSearchText.set('');
+      this.loadEligibleHeads(true);
+    }
+    this.isDropdownOpen.set(!current);
+  }
+
+  selectHead(emp: SimpleEmployee | null): void {
+    const form = this.isEditModalOpen() ? this.editForm : this.createForm;
+    form.get('departmentHeadEmployeeId')?.setValue(emp ? String(emp.employeeId) : '');
+    this.isDropdownOpen.set(false);
+  }
+
+  onDropdownScroll(event: Event): void {
+    const target = event.target as HTMLElement;
+    const threshold = 10; 
+    const isAtBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + threshold;
+    if (isAtBottom && !this.dropdownIsLoading() && this.dropdownHasMore()) {
+      this.loadEligibleHeads(false);
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.custom-select-container')) {
+      this.isDropdownOpen.set(false);
+    }
+  }
+
+  // Filtering Actions 
   onStatusChange(val: string): void {
     this.activeStatus.set(val);
     this.loadDepartments();
@@ -126,7 +225,7 @@ export class DepartmentsComponent implements OnInit {
     this.loadDepartments();
   }
 
-  // ── View Modal Actions ───────────────────────────────────────
+  //  View Modal Actions 
   openViewModal(dept: DepartmentDto): void {
     this.isActionLoading.set(true);
     this.departmentService.getDepartmentById(dept.departmentId).subscribe({
@@ -147,12 +246,17 @@ export class DepartmentsComponent implements OnInit {
     this.selectedDept.set(null);
   }
 
-  // ── Create Modal Actions ─────────────────────────────────────
+  //  Create Modal Actions 
   openCreateModal(): void {
     this.createForm.reset({
       departmentName: '',
       departmentHeadEmployeeId: '',
     });
+    this.dropdownSearchText.set('');
+    this.dropdownPage.set(1);
+    this.dropdownHasMore.set(true);
+    this.eligibleHeads.set([]);
+    this.isDropdownOpen.set(false);
     this.isCreateModalOpen.set(true);
   }
 
@@ -179,7 +283,6 @@ export class DepartmentsComponent implements OnInit {
         this.isActionLoading.set(false);
         this.closeCreateModal();
         this.loadDepartments();
-        this.loadEligibleHeads(); // reload eligible heads since one may have been assigned
       },
       error: (err) => {
         const message = err?.error?.message || err?.error || 'Failed to create department.';
@@ -189,7 +292,7 @@ export class DepartmentsComponent implements OnInit {
     });
   }
 
-  // ── Edit Modal Actions ───────────────────────────────────────
+  //  Edit Modal Actions 
   openEditModal(dept: DepartmentDto): void {
     this.selectedDept.set(dept);
     this.editForm.reset({
@@ -197,6 +300,11 @@ export class DepartmentsComponent implements OnInit {
       departmentHeadEmployeeId: dept.departmentHeadEmployeeId || '',
       isActive: dept.isActive,
     });
+    this.dropdownSearchText.set('');
+    this.dropdownPage.set(1);
+    this.dropdownHasMore.set(true);
+    this.eligibleHeads.set([]);
+    this.isDropdownOpen.set(false);
     this.safetyChecked.set(false);
     this.isEditModalOpen.set(true);
   }
@@ -230,7 +338,6 @@ export class DepartmentsComponent implements OnInit {
         this.isActionLoading.set(false);
         this.closeEditModal();
         this.loadDepartments();
-        this.loadEligibleHeads(); // reload eligible list
       },
       error: (err) => {
         const message = err?.error?.message || err?.error || 'Failed to update department.';
