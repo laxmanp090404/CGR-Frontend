@@ -19,6 +19,9 @@ export interface NavItem {
   imports: [CommonModule, RouterModule],
   templateUrl: './dashboard-shell.html',
   styleUrl: './dashboard-shell.scss',
+  host: {
+    '[attr.title]': 'null'
+  }
 })
 export class DashboardShellComponent {
   readonly navItems = input.required<NavItem[]>();
@@ -39,11 +42,24 @@ export class DashboardShellComponent {
 
   readonly activeTab = computed(() => {
     const url = this.currentUrl();
-    if (url.includes('/admin/departments') || 
-        url.includes('/admin/categories') || 
-        url.includes('/admin/employees') || 
-        url.includes('/admin/role-requests')) {
-      return 'system';
+    const role = this.tokenStorage.getRole();
+    if (role === 'ADMIN') {
+      if (url.includes('/admin/departments') || 
+          url.includes('/admin/categories') || 
+          url.includes('/admin/employees') || 
+          url.includes('/admin/role-requests') ||
+          url.includes('/admin/gro-workload')) {
+        return 'system';
+      }
+      return 'home';
+    }
+    if (role === 'GRO' || role === 'DEPARTMENT_HEAD') {
+      if (url.includes('/raise-complaint') || 
+          url.includes('/my-filed-complaints') || 
+          url.includes('/profile')) {
+        return 'myspace';
+      }
+      return 'home';
     }
     return 'home';
   });
@@ -64,18 +80,36 @@ export class DashboardShellComponent {
       return item;
     });
 
-    if (this.isAdmin()) {
+    const role = this.tokenStorage.getRole();
+    if (role === 'ADMIN') {
       const active = this.activeTab();
       const systemRoutes = [
         '/admin/departments',
         '/admin/categories',
         '/admin/employees',
-        '/admin/role-requests'
+        '/admin/role-requests',
+        '/admin/gro-workload'
       ];
       if (active === 'system') {
         return items.filter(item => systemRoutes.includes(item.route));
       } else {
         return items.filter(item => !systemRoutes.includes(item.route));
+      }
+    }
+
+    if (role === 'GRO' || role === 'DEPARTMENT_HEAD') {
+      const active = this.activeTab();
+      const prefix = role === 'GRO' ? 'gro' : 'dept-head';
+      const mySpaceRoutes = [
+        `/${prefix}/raise-complaint`,
+        `/${prefix}/my-filed-complaints`,
+        `/${prefix}/profile`
+      ];
+
+      if (active === 'myspace') {
+        return items.filter(item => mySpaceRoutes.includes(item.route));
+      } else {
+        return items.filter(item => !mySpaceRoutes.includes(item.route));
       }
     }
 
@@ -103,11 +137,26 @@ export class DashboardShellComponent {
     }
   }
 
-  setTab(tab: 'home' | 'system'): void {
-    if (tab === 'home') {
-      this.router.navigate(['/admin/dashboard']);
-    } else {
-      this.router.navigate(['/admin/employees']);
+  setTab(tab: 'home' | 'system' | 'myspace'): void {
+    const role = this.tokenStorage.getRole();
+    if (role === 'ADMIN') {
+      if (tab === 'home') {
+        this.router.navigate(['/admin/dashboard']);
+      } else {
+        this.router.navigate(['/admin/employees']);
+      }
+    } else if (role === 'GRO') {
+      if (tab === 'home') {
+        this.router.navigate(['/gro/dashboard']);
+      } else {
+        this.router.navigate(['/gro/my-filed-complaints']);
+      }
+    } else if (role === 'DEPARTMENT_HEAD') {
+      if (tab === 'home') {
+        this.router.navigate(['/dept-head/dashboard']);
+      } else {
+        this.router.navigate(['/dept-head/my-filed-complaints']);
+      }
     }
   }
 

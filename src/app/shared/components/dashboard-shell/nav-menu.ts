@@ -17,6 +17,7 @@ export function getNavItems(role: Role): NavItem[] {
         { label: 'My Filed Complaints', route: '/gro/my-filed-complaints', icon: 'requests' },
         { label: 'My Work Queue', route: '/gro/my-work-queue', icon: 'work-queue' },
         { label: 'Complaint Requests', route: '/gro/complaint-requests', icon: 'requests' },
+        { label: 'My Profile', route: '/gro/profile', icon: 'profile' },
       ];
     case 'DEPARTMENT_HEAD':
       return [
@@ -26,6 +27,8 @@ export function getNavItems(role: Role): NavItem[] {
         { label: 'Department Complaints', route: '/dept-head/department-complaints', icon: 'departments' },
         { label: 'My Work Queue', route: '/dept-head/my-work-queue', icon: 'work-queue' },
         { label: 'Complaint Requests', route: '/dept-head/complaint-requests', icon: 'requests' },
+        { label: 'GRO Workload', route: '/dept-head/gro-workload', icon: 'work-queue' },
+        { label: 'My Profile', route: '/dept-head/profile', icon: 'profile' },
       ];
     case 'ADMIN':
       return [
@@ -37,6 +40,7 @@ export function getNavItems(role: Role): NavItem[] {
         { label: 'Employees', route: '/admin/employees', icon: 'employees' },
         { label: 'Departments', route: '/admin/departments', icon: 'departments' },
         { label: 'Categories', route: '/admin/categories', icon: 'categories' },
+        { label: 'GRO Workload', route: '/admin/gro-workload', icon: 'work-queue' },
         { label: 'Department-wise Analytics', route: '/admin/department-wise-analytics', icon: 'chart' },
       ];
     default:

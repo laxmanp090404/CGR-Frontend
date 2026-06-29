@@ -82,6 +82,13 @@
           <button class="header__nav-btn" [class.active]="activeTab() === 'home'" (click)="setTab('home')">Home</button>
           <button class="header__nav-btn" [class.active]="activeTab() === 'system'" (click)="setTab('system')">System</button>
         </nav>
+      } @else if (session(); as user) {
+        @if (user.role === 'GRO' || user.role === 'DEPARTMENT_HEAD') {
+          <nav class="header__nav">
+            <button class="header__nav-btn" [class.active]="activeTab() === 'home'" (click)="setTab('home')">Home</button>
+            <button class="header__nav-btn" [class.active]="activeTab() === 'myspace'" (click)="setTab('myspace')">My Space</button>
+          </nav>
+        }
       }
 
       <!-- User avatar and info -->

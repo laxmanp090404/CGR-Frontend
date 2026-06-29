@@ -1,0 +1,687 @@
+<app-dashboard-shell [navItems]="navItems()" title="Category Directory">
+  <!-- Page Header -->
+  <div class="page-header-row">
+    <div>
+      <h2 class="section-title">Category Management</h2>
+      <p class="section-desc">Manage complaint categories, default priorities, SLA periods, and multi-tier escalation timelines.</p>
+    </div>
+    <button class="btn btn-primary btn-with-icon" (click)="openCreateModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Add Category
+    </button>
+  </div>
+
+  <!-- Filters & Search Bar -->
+  <div class="filter-card">
+    <div class="filter-grid">
+      <!-- Department Filter -->
+      <div class="filter-item">
+        <label class="form-label" for="dept-filter">Department</label>
+        <select
+          id="dept-filter"
+          class="form-input"
+          [value]="selectedDeptId() ?? ''"
+          (change)="onDeptChange($any($event.target).value)"
+        >
+          <option value="">All Departments</option>
+          @for (dept of departments(); track dept.departmentId) {
+            <option [value]="dept.departmentId">{{ dept.departmentName }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Active Status Filter -->
+      <div class="filter-item">
+        <label class="form-label" for="status-filter">Status</label>
+        <select
+          id="status-filter"
+          class="form-input"
+          [value]="activeStatus()"
+          (change)="onStatusChange($any($event.target).value)"
+        >
+          <option value="all">All Statuses</option>
+          <option value="active">Active Only</option>
+          <option value="inactive">Inactive Only</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Bottom Actions Row -->
+    <div class="filter-actions-row">
+      <div class="page-size-container">
+        <label for="pageSize" class="page-size-label">Page Size:</label>
+        <select id="pageSize" class="form-input page-size-select" [value]="pageSizeDropdownValue()"
+          (change)="onDropdownPageSizeChange($any($event.target).value)">
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="custom">Custom...</option>
+        </select>
+        @if (isCustomPageSize()) {
+          <input type="number" min="1" class="form-input page-size-input" [value]="localPageSize()"
+            (input)="onCustomPageSizeChange($any($event.target).value)" placeholder="Size" style="width: 80px;" />
+        }
+      </div>
+
+      <button class="btn-reset" (click)="resetFilters()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"></path>
+          <path d="M1 20v-6h6"></path>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        Clear Filters
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Table View -->
+  @if (isLoading()) {
+    <app-table-skeleton [cols]="7" [rows]="10" />
+  } @else {
+    @if (categories().length === 0) {
+      <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+        <h3>No categories found</h3>
+        <p>No complaint categories match the chosen filters.</p>
+      </div>
+    } @else {
+      <div class="table-card">
+        <div class="table-wrapper">
+          <table class="data-table" id="categories-table">
+            <thead>
+              <tr>
+                <th class="id-header">ID</th>
+                <th>Category Name</th>
+                <th>Department</th>
+                <th>Default Priority</th>
+                <th>SLA Hours</th>
+                <th>Status</th>
+                <th class="actions-header">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (cat of categories(); track cat.categoryId) {
+                <tr [class.inactive-row]="!cat.isActive">
+                  <td class="id-cell">#{{ cat.categoryId }}</td>
+                  <td class="name-cell">{{ cat.categoryName }}</td>
+                  <td>{{ cat.departmentName }}</td>
+                  <td>
+                    <span class="priority-badge" [class]="getPriorityClass(cat.defaultPriorityName)">
+                      {{ cat.defaultPriorityName }}
+                    </span>
+                  </td>
+                  <td class="sla-cell">{{ cat.slaHours }} hours</td>
+                  <td>
+                    <span class="status-badge" [class.badge--active]="cat.isActive" [class.badge--inactive]="!cat.isActive">
+                      {{ cat.isActive ? 'Active' : 'Inactive' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="actions-cell">
+                      <button
+                        class="btn-icon btn-icon--info"
+                        (click)="openViewModal(cat)"
+                        title="View Details"
+                        data-tooltip="View Details"
+                        aria-label="View category details"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="12" y1="16" x2="12" y2="12"></line>
+                          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                      </button>
+
+                      <button
+                        class="btn-icon btn-icon--primary"
+                        (click)="openEditModal(cat)"
+                        title="Edit Details"
+                        data-tooltip="Edit Details"
+                        aria-label="Edit category details"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Footer -->
+        @if (totalPages() > 1) {
+          <div class="pagination">
+            <button
+              class="page-btn"
+              [disabled]="currentPage() === 1"
+              (click)="goToPage(currentPage() - 1)"
+              aria-label="Previous page"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            @for (p of pages; track p) {
+              <button
+                class="page-btn"
+                [class.page-btn--active]="p === currentPage()"
+                (click)="goToPage(p)"
+              >
+                {{ p }}
+              </button>
+            }
+            <button
+              class="page-btn"
+              [disabled]="currentPage() === totalPages()"
+              (click)="goToPage(currentPage() + 1)"
+              aria-label="Next page"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        }
+
+        <div class="table-meta">
+          Showing {{ categories().length }} of {{ totalCount() }} categories &mdash; Page {{ currentPage() }} of {{ totalPages() || 1 }}
+        </div>
+      </div>
+    }
+  }
+
+  <!-- View Modal -->
+  @if (isViewModalOpen() && selectedCategory()) {
+    <div class="modal-overlay" (click)="closeViewModal()">
+      <div class="modal-container modal-container--md" (click)="$event.stopPropagation()">
+        <div class="modal-header modal-header--info">
+          <h3 class="modal-title">Category Details</h3>
+          <button class="modal-close-btn" (click)="closeViewModal()" aria-label="Close dialog">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="detail-grid">
+            <div class="detail-row">
+              <span class="detail-label">Category Name</span>
+              <span class="detail-value text-bold">{{ selectedCategory()?.categoryName }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Department</span>
+              <span class="detail-value">{{ selectedCategory()?.departmentName }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Default Priority</span>
+              <span class="detail-value">
+                <span class="priority-badge" [class]="getPriorityClass(selectedCategory()?.defaultPriorityName ?? '')">
+                  {{ selectedCategory()?.defaultPriorityName }}
+                </span>
+              </span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">SLA Resolution Time</span>
+              <span class="detail-value text-bold">{{ selectedCategory()?.slaHours }} hours</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Active Status</span>
+              <span class="detail-value">
+                <span class="status-badge" [class.badge--active]="selectedCategory()?.isActive" [class.badge--inactive]="!selectedCategory()?.isActive">
+                  {{ selectedCategory()?.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Escalation Rules Preview Grid -->
+          <div class="rules-preview-section">
+            <h4 class="section-subtitle">Escalation Rules Matrix</h4>
+            <div class="table-wrapper">
+              <table class="preview-rules-table">
+                <thead>
+                  <tr>
+                    <th>Priority</th>
+                    <th>Level 1 Escalation</th>
+                    <th>Level 2 Escalation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (priorityName of ['Low', 'Medium', 'High', 'Critical']; track priorityName; let idx = $index) {
+                    @let priorityId = idx + 1;
+                    @let l1 = getRule(selectedCategory()?.escalationRules, priorityId, 1);
+                    @let l2 = getRule(selectedCategory()?.escalationRules, priorityId, 2);
+                    <tr>
+                      <td class="priority-label-cell">
+                        <span class="priority-dot" [class]="priorityName.toLowerCase()"></span>
+                        {{ priorityName }}
+                      </td>
+                      <td>{{ l1 ? l1.escalateAfterHours + ' hours' : '—' }}</td>
+                      <td>{{ l2 ? l2.escalateAfterHours + ' hours' : '—' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <!-- Cancel/Close Button on Left, Action/Save on Right (already aligns to this rule) -->
+          <button type="button" class="btn btn-secondary" (click)="closeViewModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Create Modal -->
+  @if (isCreateModalOpen()) {
+    <div class="modal-overlay" (click)="closeCreateModal()">
+      <div class="modal-container modal-container--lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Create New Category</h3>
+          <button class="modal-close-btn" (click)="closeCreateModal()" aria-label="Close dialog">&times;</button>
+        </div>
+
+        <form [formGroup]="createForm" (ngSubmit)="onCreateSubmit()">
+          <div class="modal-body scrollable-body">
+            <!-- Category Name -->
+            <div class="form-field">
+              <label class="form-label" for="create-name">Category Name</label>
+              <input
+                id="create-name"
+                type="text"
+                class="form-input"
+                formControlName="categoryName"
+                placeholder="e.g. Server Outage"
+              />
+              @if (createName.touched && createName.invalid) {
+                <span class="field-error">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  Category name is required (max 100 characters).
+                </span>
+              }
+            </div>
+
+            <!-- Department Selection -->
+            <div class="form-field">
+              <label class="form-label" for="create-dept">Department</label>
+              <select id="create-dept" class="form-input" formControlName="departmentId">
+                <option value="" disabled selected>Select department...</option>
+                @for (dept of departments(); track dept.departmentId) {
+                  <option [value]="dept.departmentId">{{ dept.departmentName }}</option>
+                }
+              </select>
+              @if (createDept.touched && createDept.invalid) {
+                <span class="field-error">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  Department is required.
+                </span>
+              }
+            </div>
+
+            <!-- Default Priority (Segmented Button Group UI) -->
+            <div class="form-field">
+              <label class="form-label">
+                Default Priority
+              </label>
+              <div class="segmented-control">
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.active]="createForm.get('defaultPriorityId')?.value === 1"
+                  (click)="createForm.patchValue({ defaultPriorityId: 1 })"
+                >
+                  <span class="priority-dot low"></span> Low
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.active]="createForm.get('defaultPriorityId')?.value === 2"
+                  (click)="createForm.patchValue({ defaultPriorityId: 2 })"
+                >
+                  <span class="priority-dot medium"></span> Medium
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.active]="createForm.get('defaultPriorityId')?.value === 3"
+                  (click)="createForm.patchValue({ defaultPriorityId: 3 })"
+                >
+                  <span class="priority-dot high"></span> High
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.active]="createForm.get('defaultPriorityId')?.value === 4"
+                  (click)="createForm.patchValue({ defaultPriorityId: 4 })"
+                >
+                  <span class="priority-dot critical"></span> Critical
+                </button>
+              </div>
+            </div>
+
+            <!-- SLA Hours -->
+            <div class="form-field">
+              <label class="form-label" for="create-sla">SLA Hours (Resolution Time)</label>
+              <input
+                id="create-sla"
+                type="number"
+                min="1"
+                max="360"
+                class="form-input"
+                formControlName="slaHours"
+                placeholder="24"
+              />
+              <span class="field-desc">Must be between 1 and 360 hours.</span>
+              @if (createSla.touched && createSla.invalid) {
+                <span class="field-error">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  SLA Hours must be between 1 and 360 hours.
+                </span>
+              }
+            </div>
+
+            <!-- Escalation Rules Grid Table -->
+            <div class="form-section">
+              <h4 class="form-section-title">Escalation Rules Settings</h4>
+              <p class="form-section-desc">Specify escalation wait times. <strong>Level 2</strong> escalation hours must be strictly less than <strong>Level 1</strong> hours for each priority tier.</p>
+              
+              @if (validationErrorMsg()) {
+                <div class="validation-alert">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <span>{{ validationErrorMsg() }}</span>
+                </div>
+              }
+
+              <div class="rules-table-wrapper" formArrayName="escalationRules">
+                <table class="rules-input-table">
+                  <thead>
+                    <tr>
+                      <th>Priority</th>
+                      <th>Level 1 Escalation (h)</th>
+                      <th>Level 2 Escalation (h)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (priorityName of ['Low', 'Medium', 'High', 'Critical']; track priorityName; let idx = $index) {
+                      @let priorityId = idx + 1;
+                      @let idxL1 = getRuleControlIndex('create', priorityId, 1);
+                      @let idxL2 = getRuleControlIndex('create', priorityId, 2);
+                      <tr>
+                        <td class="priority-label-cell">
+                          <span class="priority-dot" [class]="priorityName.toLowerCase()"></span>
+                          {{ priorityName }}
+                        </td>
+                        <td>
+                          @if (idxL1 !== -1) {
+                            <div [formGroupName]="idxL1">
+                              <input
+                                type="number"
+                                min="1"
+                                class="form-input form-input--compact"
+                                formControlName="escalateAfterHours"
+                                placeholder="Hours"
+                              />
+                            </div>
+                          }
+                        </td>
+                        <td>
+                          @if (idxL2 !== -1) {
+                            <div [formGroupName]="idxL2">
+                              <input
+                                type="number"
+                                min="1"
+                                class="form-input form-input--compact"
+                                formControlName="escalateAfterHours"
+                                placeholder="Hours"
+                              />
+                            </div>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <!-- Cancel/Close Button on Left, Action/Save on Right -->
+            <button type="button" class="btn btn-secondary" (click)="closeCreateModal()" [disabled]="isActionLoading()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="createForm.invalid || isActionLoading()">
+              @if (isActionLoading()) {
+                <span class="spinner"></span>
+              } @else {
+                Create Category
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Edit Modal -->
+  @if (isEditModalOpen() && selectedCategory()) {
+    <div class="modal-overlay" (click)="closeEditModal()">
+      <div class="modal-container modal-container--lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Edit Category Info</h3>
+          <button class="modal-close-btn" (click)="closeEditModal()" aria-label="Close dialog">&times;</button>
+        </div>
+
+        <form [formGroup]="editForm" (ngSubmit)="onEditSubmit()">
+          <div class="modal-body scrollable-body">
+            <!-- Category Name -->
+            <div class="form-field">
+              <label class="form-label" for="edit-name">Category Name</label>
+              <input
+                id="edit-name"
+                type="text"
+                class="form-input"
+                formControlName="categoryName"
+                placeholder="Category Name"
+              />
+              @if (editName.touched && editName.invalid) {
+                <span class="field-error">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  Category name is required (max 100 characters).
+                </span>
+              }
+            </div>
+
+            <!-- Department Selection -->
+            <div class="form-field">
+              <label class="form-label" for="edit-dept">Department</label>
+              <select id="edit-dept" class="form-input" formControlName="departmentId">
+                @for (dept of departments(); track dept.departmentId) {
+                  <option [value]="dept.departmentId">{{ dept.departmentName }}</option>
+                }
+              </select>
+              @if (editDept.touched && editDept.invalid) {
+                <span class="field-error">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  Department is required.
+                </span>
+              }
+            </div>
+
+            <!-- Default Priority (Segmented Button Group UI) -->
+            <div class="form-field">
+              <label class="form-label">
+                Default Priority
+              </label>
+              <div class="segmented-control">
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.active]="editForm.get('defaultPriorityId')?.value === 1"
+                  (click)="editForm.patchValue({ defaultPriorityId: 1 })"
+                >
+                  <span class="priority-dot low"></span> Low
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.active]="editForm.get('defaultPriorityId')?.value === 2"
+                  (click)="editForm.patchValue({ defaultPriorityId: 2 })"
+                >
+                  <span class="priority-dot medium"></span> Medium
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.active]="editForm.get('defaultPriorityId')?.value === 3"
+                  (click)="editForm.patchValue({ defaultPriorityId: 3 })"
+                >
+                  <span class="priority-dot high"></span> High
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  [class.active]="editForm.get('defaultPriorityId')?.value === 4"
+                  (click)="editForm.patchValue({ defaultPriorityId: 4 })"
+                >
+                  <span class="priority-dot critical"></span> Critical
+                </button>
+              </div>
+            </div>
+
+            <!-- SLA Hours -->
+            <div class="form-field">
+              <label class="form-label" for="edit-sla">SLA Hours (Resolution Time)</label>
+              <input
+                id="edit-sla"
+                type="number"
+                min="1"
+                max="360"
+                class="form-input"
+                formControlName="slaHours"
+                placeholder="24"
+              />
+              <span class="field-desc">Must be between 1 and 360 hours.</span>
+              @if (editSla.touched && editSla.invalid) {
+                <span class="field-error">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  SLA Hours must be between 1 and 360 hours.
+                </span>
+              }
+            </div>
+
+            <!-- Active Status -->
+            <div class="form-field">
+              <label class="form-label" for="edit-status">Category Status</label>
+              <select id="edit-status" class="form-input" formControlName="isActive">
+                <option [ngValue]="true">Active</option>
+                <option [ngValue]="false">Inactive</option>
+              </select>
+            </div>
+
+            <!-- Escalation Rules Grid Table -->
+            <div class="form-section">
+              <h4 class="form-section-title">Escalation Rules Settings</h4>
+              <p class="form-section-desc">Specify escalation wait times. <strong>Level 2</strong> escalation hours must be strictly less than <strong>Level 1</strong> hours for each priority tier.</p>
+              
+              @if (validationErrorMsg()) {
+                <div class="validation-alert">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <span>{{ validationErrorMsg() }}</span>
+                </div>
+              }
+
+              <div class="rules-table-wrapper" formArrayName="escalationRules">
+                <table class="rules-input-table">
+                  <thead>
+                    <tr>
+                      <th>Priority</th>
+                      <th>Level 1 Escalation (h)</th>
+                      <th>Level 2 Escalation (h)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (priorityName of ['Low', 'Medium', 'High', 'Critical']; track priorityName; let idx = $index) {
+                      @let priorityId = idx + 1;
+                      @let idxL1 = getRuleControlIndex('edit', priorityId, 1);
+                      @let idxL2 = getRuleControlIndex('edit', priorityId, 2);
+                      <tr>
+                        <td class="priority-label-cell">
+                          <span class="priority-dot" [class]="priorityName.toLowerCase()"></span>
+                          {{ priorityName }}
+                        </td>
+                        <td>
+                          @if (idxL1 !== -1) {
+                            <div [formGroupName]="idxL1">
+                              <input
+                                type="number"
+                                min="1"
+                                class="form-input form-input--compact"
+                                formControlName="escalateAfterHours"
+                                placeholder="Hours"
+                              />
+                            </div>
+                          }
+                        </td>
+                        <td>
+                          @if (idxL2 !== -1) {
+                            <div [formGroupName]="idxL2">
+                              <input
+                                type="number"
+                                min="1"
+                                class="form-input form-input--compact"
+                                formControlName="escalateAfterHours"
+                                placeholder="Hours"
+                              />
+                            </div>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <!-- Cancel/Close Button on Left, Action/Save on Right -->
+            <button type="button" class="btn btn-secondary" (click)="closeEditModal()" [disabled]="isActionLoading()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="editForm.invalid || isActionLoading()">
+              @if (isActionLoading()) {
+                <span class="spinner"></span>
+              } @else {
+                Save Changes
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</app-dashboard-shell>
