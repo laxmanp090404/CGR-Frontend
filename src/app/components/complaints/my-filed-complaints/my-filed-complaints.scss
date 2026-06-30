@@ -263,3 +263,21 @@
     background: #173d78;
   }
 }
+
+// Escalation Due urgency
+.escalation-overdue {
+  color: #e05555;
+  font-weight: 600;
+  font-size: 0.78rem;
+}
+
+.escalation-warning {
+  color: #fea619;
+  font-weight: 600;
+  font-size: 0.78rem;
+}
+
+.escalation-ok {
+  color: #26ac52;
+  font-size: 0.78rem;
+}

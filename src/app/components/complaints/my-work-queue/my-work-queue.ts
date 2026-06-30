@@ -38,6 +38,7 @@ export class MyWorkQueueComponent {
   readonly categoryId = signal<number | null>(null);
   readonly departmentId = signal<number | null>(null);
   readonly searchQuery = signal<string>('');
+  readonly sortBy = signal<string>('filed_newest');
 
   readonly isAdmin = computed(() => this.tokenStorage.getRole() === 'ADMIN');
   readonly deptId = computed(() => this.tokenStorage.getDepartmentId());
@@ -71,7 +72,8 @@ export class MyWorkQueueComponent {
           this.priorityId(),
           this.categoryId(),
           this.departmentId(),
-          this.searchQuery()
+          this.searchQuery(),
+          this.sortBy()
         );
       }),
       takeUntilDestroyed(this.destroyRef)
@@ -104,6 +106,7 @@ export class MyWorkQueueComponent {
     }
     this.searchQuery.set(filters.search);
     this.pageSize.set(filters.pageSize);
+    this.sortBy.set(filters.sortBy);
     this.currentPage.set(1); // Reset to page 1
     this.loadQueue(searchChanged);
   }
@@ -145,5 +148,15 @@ export class MyWorkQueueComponent {
   get pages(): number[] {
     const total = this.result()?.totalPages ?? 1;
     return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  getEscalationClass(escalationDueAt: string | null): string {
+    if (!escalationDueAt) return '';
+    const due = new Date(escalationDueAt).getTime();
+    const now = Date.now();
+    const diff = due - now;
+    if (diff < 0) return 'escalation-overdue';
+    if (diff < 24 * 60 * 60 * 1000) return 'escalation-warning';
+    return 'escalation-ok';
   }
 }

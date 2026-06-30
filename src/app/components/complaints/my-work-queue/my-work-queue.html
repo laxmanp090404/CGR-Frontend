@@ -18,7 +18,7 @@
   />
 
   @if (isLoading()) {
-    <app-table-skeleton [cols]="7" [rows]="10" />
+    <app-table-skeleton [cols]="8" [rows]="10" />
   } @else if (result(); as data) {
     @if (data.items.length === 0) {
       <div class="empty-state">
@@ -39,6 +39,7 @@
                 <th>Priority</th>
                 <th>Status</th>
                 <th>Filed On</th>
+                <th>Escalation Due</th>
               </tr>
             </thead>
             <tbody>
@@ -63,6 +64,15 @@
                     </span>
                   </td>
                   <td>{{ item.createdAt | date: 'dd MMM yyyy' }}</td>
+                  <td>
+                    @if (item.escalationDueAt) {
+                      <span [class]="getEscalationClass(item.escalationDueAt)">
+                        {{ item.escalationDueAt | date: 'dd MMM yyyy' }}
+                      </span>
+                    } @else {
+                      <span>—</span>
+                    }
+                  </td>
                 </tr>
               }
             </tbody>

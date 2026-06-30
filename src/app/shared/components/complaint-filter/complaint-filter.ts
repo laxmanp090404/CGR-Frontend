@@ -29,6 +29,7 @@ export class ComplaintFilterComponent implements OnInit {
   readonly search = input<string>('');
   readonly raisedByMe = input<boolean>(false);
   readonly pageSize = input<number>(10);
+  readonly sortBy = input<string>('filed_newest');
 
   // Configuration control inputs
   readonly showDepartmentFilter = input<boolean>(true);
@@ -47,6 +48,7 @@ export class ComplaintFilterComponent implements OnInit {
   readonly localDepartmentId = signal<number | null>(null);
   readonly localRaisedByMe = signal<boolean>(false);
   readonly localPageSize = signal<number>(10);
+  readonly localSortBy = signal<string>('filed_newest');
   readonly isCustomPageSize = signal<boolean>(false);
   readonly pageSizeDropdownValue = signal<string>('10');
 
@@ -95,6 +97,9 @@ export class ComplaintFilterComponent implements OnInit {
         this.pageSizeDropdownValue.set('custom');
       }
     });
+    effect(() => {
+      this.localSortBy.set(this.sortBy() ?? 'filed_newest');
+    });
   }
 
   ngOnInit(): void {
@@ -121,6 +126,7 @@ export class ComplaintFilterComponent implements OnInit {
       search: this.localSearch().trim(),
       raisedByMe: this.localRaisedByMe(),
       pageSize: Number(this.localPageSize()) || 10,
+      sortBy: this.localSortBy(),
     });
   }
   onDropdownPageSizeChange(value: string): void {
@@ -157,6 +163,7 @@ export class ComplaintFilterComponent implements OnInit {
     this.isCustomPageSize.set(false);
     this.pageSizeDropdownValue.set('10');
     this.localPageSize.set(10);
+    this.localSortBy.set('filed_newest');
     this.onFilterChange();
   }
 }

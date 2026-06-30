@@ -67,6 +67,18 @@
       </select>
     </div>
     }
+
+    <!-- Sort By -->
+    <div class="filter-item">
+      <label for="sortBy" class="filter-label">Sort By</label>
+      <select id="sortBy" class="form-select filter-input" [ngModel]="localSortBy()"
+        (ngModelChange)="localSortBy.set($event); onFilterChange()">
+        <option value="filed_newest">Filed (Newest first)</option>
+        <option value="filed_oldest">Filed (Oldest first)</option>
+        <option value="due_soonest">Escalation Due (Soonest)</option>
+        <option value="due_latest">Escalation Due (Latest)</option>
+      </select>
+    </div>
   </div>
 
   <div class="filter-actions-row">

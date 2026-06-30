@@ -18,7 +18,8 @@ export class ComplaintService {
     categoryId?: number | null,
     departmentId?: number | null,
     search?: string | null,
-    raisedByMe?: boolean | null
+    raisedByMe?: boolean | null,
+    sortBy?: string | null
   ): Observable<PagedResultDto<ComplaintDashboardDto>> {
     const params: Record<string, string> = {
       page: String(page),
@@ -30,6 +31,7 @@ export class ComplaintService {
     if (departmentId != null) params['departmentId'] = String(departmentId);
     if (search) params['search'] = search;
     if (raisedByMe != null) params['raisedByMe'] = String(raisedByMe);
+    if (sortBy) params['sortBy'] = sortBy;
 
     return this.http.get<PagedResultDto<ComplaintDashboardDto>>(this.apiBase, { params });
   }
@@ -41,7 +43,8 @@ export class ComplaintService {
     priorityId?: number | null,
     categoryId?: number | null,
     departmentId?: number | null,
-    search?: string | null
+    search?: string | null,
+    sortBy?: string | null
   ): Observable<PagedResultDto<ComplaintDashboardDto>> {
     const params: Record<string, string> = {
       page: String(page),
@@ -52,6 +55,7 @@ export class ComplaintService {
     if (categoryId != null) params['categoryId'] = String(categoryId);
     if (departmentId != null) params['departmentId'] = String(departmentId);
     if (search) params['search'] = search;
+    if (sortBy) params['sortBy'] = sortBy;
 
     return this.http.get<PagedResultDto<ComplaintDashboardDto>>(`${this.apiBase}/my-work-queue`, { params });
   }

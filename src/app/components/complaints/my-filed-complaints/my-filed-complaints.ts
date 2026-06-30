@@ -46,6 +46,7 @@ export class MyFiledComplaintsComponent {
   readonly categoryId = signal<number | null>(null);
   readonly departmentId = signal<number | null>(null);
   readonly searchQuery = signal<string>('');
+  readonly sortBy = signal<string>('filed_newest');
 
   readonly isAdmin = computed(() => this.tokenStorage.getRole() === 'ADMIN');
   readonly pageTitle = computed(() => this.isAdmin() ? 'View Complaints' : 'My Filed Complaints');
@@ -78,7 +79,8 @@ export class MyFiledComplaintsComponent {
           this.categoryId(),
           this.departmentId(),
           this.searchQuery(),
-          raisedByMeVal
+          raisedByMeVal,
+          this.sortBy()
         );
       }),
       takeUntilDestroyed(this.destroyRef)
@@ -106,6 +108,7 @@ export class MyFiledComplaintsComponent {
     this.departmentId.set(filters.departmentId);
     this.searchQuery.set(filters.search);
     this.pageSize.set(filters.pageSize);
+    this.sortBy.set(filters.sortBy);
     this.currentPage.set(1); // Reset to page 1
     this.loadComplaints(searchChanged);
   }
@@ -153,5 +156,15 @@ export class MyFiledComplaintsComponent {
   get pages(): number[] {
     const total = this.result()?.totalPages ?? 1;
     return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  getEscalationClass(escalationDueAt: string | null): string {
+    if (!escalationDueAt) return '';
+    const due = new Date(escalationDueAt).getTime();
+    const now = Date.now();
+    const diff = due - now;
+    if (diff < 0) return 'escalation-overdue';
+    if (diff < 24 * 60 * 60 * 1000) return 'escalation-warning';
+    return 'escalation-ok';
   }
 }

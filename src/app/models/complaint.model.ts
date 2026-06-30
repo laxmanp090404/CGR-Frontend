@@ -14,7 +14,8 @@ export interface ComplaintDashboardDto {
   categoryName: string;
   departmentName: string;
   createdAt: string;
-  raisedByName:string | null;
+  escalationDueAt: string | null;
+  raisedByName: string | null;
   currentHandlerName: string | null;
 }
 export interface CreateComplaintRequest {
@@ -31,6 +32,7 @@ export interface ComplaintFilterParams {
   search: string;
   raisedByMe: boolean;
   pageSize: number;
+  sortBy: string;
 }
 
 export interface ComplaintCommentDto {

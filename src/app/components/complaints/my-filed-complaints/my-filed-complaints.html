@@ -41,6 +41,7 @@
                 <th>Status</th>
                 <th>Handler</th>
                 <th>Filed On</th>
+                <th>Escalation Due</th>
               </tr>
             </thead>
             <tbody>
@@ -66,6 +67,15 @@
                   </td>
                   <td>{{ item.currentHandlerName ?? '—' }}</td>
                   <td>{{ item.createdAt | date: 'dd-MM-yyyy hh:mm a' }}</td>
+                  <td>
+                    @if (item.escalationDueAt) {
+                      <span [class]="getEscalationClass(item.escalationDueAt)">
+                        {{ item.escalationDueAt | date: 'dd-MM-yyyy hh:mm a' }}
+                      </span>
+                    } @else {
+                      <span>—</span>
+                    }
+                  </td>
                 </tr>
               }
             </tbody>
