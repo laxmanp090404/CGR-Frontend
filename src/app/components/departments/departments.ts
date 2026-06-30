@@ -1,7 +1,10 @@
-import { Component, inject, signal, computed, OnInit, HostListener } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, HostListener, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { DepartmentApiService } from '../../services/department.api.service';
 import { EmployeeService } from '../../services/employee.service';
@@ -35,6 +38,8 @@ export class DepartmentsComponent implements OnInit {
   private readonly departmentService = inject(DepartmentApiService);
   private readonly employeeService = inject(EmployeeService);
   private readonly toast = inject(ToastService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly dropdownSearchSubject = new Subject<string>();
 
   readonly navItems = signal<NavItem[]>(getNavItems('ADMIN'));
 
@@ -99,7 +104,18 @@ export class DepartmentsComponent implements OnInit {
   get editIsActive() { return this.editForm.get('isActive')!; }
 
   ngOnInit(): void {
+    this.setupDropdownSearchStream();
     this.loadDepartments();
+  }
+
+  setupDropdownSearchStream(): void {
+    this.dropdownSearchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => {
+      this.loadEligibleHeads(true);
+    });
   }
 
   loadDepartments(): void {
@@ -164,19 +180,11 @@ export class DepartmentsComponent implements OnInit {
     });
   }
 
-  private searchTimer: any = null;
   onSearchTextChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     const text = input.value;
     this.dropdownSearchText.set(text);
-
-    if (this.searchTimer) {
-      clearTimeout(this.searchTimer);
-    }
-
-    this.searchTimer = setTimeout(() => {
-      this.loadEligibleHeads(true);
-    }, 300);
+    this.dropdownSearchSubject.next(text);
   }
 
   toggleDropdown(event?: Event): void {

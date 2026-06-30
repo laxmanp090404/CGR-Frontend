@@ -10,6 +10,7 @@ import { TokenStorageService } from '../../../services/auth.api.service';
 import { DashboardShellComponent, NavItem } from '../../../shared/components/dashboard-shell/dashboard-shell';
 import { getNavItems } from '../../../shared/components/dashboard-shell/nav-menu';
 import { ROLE_DASHBOARD_ROUTE } from '../../../models/auth.model';
+import { HasUnsavedChanges } from '../../../guards/deactivate.guard';
 
 @Component({
   selector: 'app-raise-complaint',
@@ -18,7 +19,7 @@ import { ROLE_DASHBOARD_ROUTE } from '../../../models/auth.model';
   templateUrl: './raise-complaint.html',
   styleUrl: './raise-complaint.scss',
 })
-export class RaiseComplaintComponent implements OnInit {
+export class RaiseComplaintComponent implements OnInit, HasUnsavedChanges {
   private readonly fb = inject(FormBuilder);
   private readonly complaintService = inject(ComplaintService);
   private readonly lookupService = inject(LookupService);
@@ -32,6 +33,11 @@ export class RaiseComplaintComponent implements OnInit {
   readonly selectedDeptId = signal<number | null>(null);
   readonly selectedFiles = signal<File[]>([]);
   readonly isDragOver = signal<boolean>(false);
+  readonly isSubmitted = signal(false);
+
+  hasUnsavedChanges(): boolean {
+    return this.form.dirty && !this.isSubmitted();
+  }
 
   readonly form: FormGroup = this.fb.group({
     complaintTitle: ['', [Validators.required, Validators.maxLength(250)]],
@@ -159,6 +165,7 @@ export class RaiseComplaintComponent implements OnInit {
       next: () => {
         this.toast.success('Complaint filed successfully!');
         this.isLoading.set(false);
+        this.isSubmitted.set(true);
         this.router.navigate([this.getMyFiledComplaintsRoute()]);
       },
       error: (err) => {

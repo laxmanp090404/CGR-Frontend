@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, inject, signal, OnInit, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -13,6 +13,7 @@ import { TokenStorageService } from '../../../services/auth.api.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { getNavItems } from '../../../shared/components/dashboard-shell/nav-menu';
 import { ROLE_DASHBOARD_ROUTE } from '../../../models/auth.model';
+import { HasUnsavedChanges } from '../../../guards/deactivate.guard';
 
 export interface StatusConfig {
   label: string;
@@ -20,7 +21,7 @@ export interface StatusConfig {
   bgColor: string;
 }
 
-// Status IDs — mirror the backend constants
+
 const STATUS_ASSIGNED            = 2;
 const STATUS_IN_PROGRESS         = 3;
 const STATUS_ESCALATED           = 4;
@@ -42,7 +43,7 @@ type ActiveModal = 'resolve' | 'escalate' | 'close' | 'reopen' | 'rejectRequest'
   templateUrl: './complaint-detail.html',
   styleUrl: './complaint-detail.scss',
 })
-export class ComplaintDetailComponent implements OnInit {
+export class ComplaintDetailComponent implements OnInit, HasUnsavedChanges {
   private readonly complaintService = inject(ComplaintService);
   private readonly requestService = inject(ComplaintRequestService);
   private readonly route = inject(ActivatedRoute);
@@ -51,13 +52,13 @@ export class ComplaintDetailComponent implements OnInit {
   private readonly tokenStorage = inject(TokenStorageService);
   private readonly sanitizer = inject(DomSanitizer);
 
-  // ── Complaint Data ─────────────────────────────────────────────────────────
+  //  Complaint Data ─
   readonly isLoading = signal(true);
   readonly complaint = signal<any | null>(null);
   readonly history = signal<any[]>([]);
   readonly escalations = signal<any[]>([]);
 
-  // ── Attachment Preview ─────────────────────────────────────────────────────
+  //  Attachment Preview ─
   readonly previewAttachment = signal<any | null>(null);
   readonly previewUrl = signal<string | null>(null);
   readonly previewUrlSafe = signal<SafeResourceUrl | null>(null);
@@ -66,18 +67,26 @@ export class ComplaintDetailComponent implements OnInit {
 
   readonly apiBaseUrl = baseUrl;
 
-  // ── Current User Context ───────────────────────────────────────────────────
+  //  Current User Context ─
   readonly currentEmployeeId = computed(() => this.tokenStorage.session()?.employeeId ?? null);
   readonly currentRole       = computed(() => this.tokenStorage.session()?.role ?? null);
 
-  // ── Action Modal State ─────────────────────────────────────────────────────
+  //  Action Modal State ─
   readonly activeModal    = signal<ActiveModal>(null);
   readonly actionRemarks  = signal('');
   readonly isActionLoading = signal(false);
 
-  // ── Permission Computed Signals ────────────────────────────────────────────
+  readonly commentsComponent = viewChild(ComplaintCommentsComponent);
 
-  /** Can the current user start progress? Current handler + ASSIGNED or ESCALATED status */
+  hasUnsavedChanges(): boolean {
+    const parentChanges = this.activeModal() !== null && this.actionRemarks().trim().length > 0;
+    const commentsChanges = this.commentsComponent()?.hasUnsavedChanges() ?? false;
+    return parentChanges || commentsChanges;
+  }
+
+  //  Permission Computed Signals 
+
+  /** start progress Current handler + ASSIGNED or ESCALATED status */
   readonly canStartProgress = computed(() => {
     const c = this.complaint();
     const empId = this.currentEmployeeId();
@@ -88,7 +97,7 @@ export class ComplaintDetailComponent implements OnInit {
     );
   });
 
-  /** Can the current user resolve the complaint? Current handler + IN_PROGRESS */
+  /** current user resolve the complaint? Current handler + IN_PROGRESS */
   readonly canResolve = computed(() => {
     const c = this.complaint();
     const empId = this.currentEmployeeId();
@@ -99,7 +108,7 @@ export class ComplaintDetailComponent implements OnInit {
     );
   });
 
-  /** Can the current user escalate? Current handler is GRO or Dept Head + IN_PROGRESS */
+  /**  current user escalate? Current handler is GRO or Dept Head + IN_PROGRESS */
   readonly canEscalate = computed(() => {
     const c = this.complaint();
     const empId = this.currentEmployeeId();
@@ -112,7 +121,7 @@ export class ComplaintDetailComponent implements OnInit {
     );
   });
 
-  /** Can the current user close? Complaint creator + RESOLVED */
+  /** current user close? Complaint creator + RESOLVED */
   readonly canClose = computed(() => {
     const c = this.complaint();
     const empId = this.currentEmployeeId();
@@ -123,7 +132,7 @@ export class ComplaintDetailComponent implements OnInit {
     );
   });
 
-  /** Can the current user reopen? Complaint creator + RESOLVED or EXTERNALLY_ESCALATED + max 3 reopens */
+  /** user reopen? Complaint creator + RESOLVED or EXTERNALLY_ESCALATED + max 3 reopens */
   readonly canReopen = computed(() => {
     const c = this.complaint();
     const empId = this.currentEmployeeId();
@@ -148,7 +157,7 @@ export class ComplaintDetailComponent implements OnInit {
     );
   });
 
-  // ── Remarks required per modal ─────────────────────────────────────────────
+  //  Remarks required per modal ─
   readonly isRemarksRequired = computed(() => {
     const m = this.activeModal();
     return m === 'resolve' || m === 'escalate' || m === 'reopen' || m === 'rejectRequest';
@@ -161,13 +170,13 @@ export class ComplaintDetailComponent implements OnInit {
     return true; // 'close' remarks are optional
   });
 
-  // ── Nav Items ──────────────────────────────────────────────────────────────
+  //  Nav Items 
   readonly navItems = computed<NavItem[]>(() => {
     const role = this.tokenStorage.getRole();
     return role ? getNavItems(role) : [];
   });
 
-  // ── Status Config ──────────────────────────────────────────────────────────
+  //  Status Config 
   readonly STATUS_CONFIG: Record<number, StatusConfig> = {
     1: { label: 'Submitted',            textColor: '#3B82F6', bgColor: '#DBEAFE' },
     2: { label: 'Assigned',             textColor: '#F59E0B', bgColor: '#FEF3C7' },
@@ -180,7 +189,7 @@ export class ComplaintDetailComponent implements OnInit {
     9: { label: 'Externally Escalated', textColor: '#7C3AED', bgColor: '#EDE9FE' },
   };
 
-  // ── Lifecycle ──────────────────────────────────────────────────────────────
+  //  Lifecycle 
   ngOnInit(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
     if (!idParam) {
@@ -213,7 +222,7 @@ export class ComplaintDetailComponent implements OnInit {
     });
   }
 
-  // ── Modal Helpers ──────────────────────────────────────────────────────────
+  //  Modal Helpers 
   openModal(modal: ActiveModal): void {
     this.actionRemarks.set('');
     this.activeModal.set(modal);
@@ -246,7 +255,7 @@ export class ComplaintDetailComponent implements OnInit {
     }
   }
 
-  // ── Status Transition Actions ──────────────────────────────────────────────
+  //  Status Transition Actions 
 
   onStartProgress(): void {
     const c = this.complaint();
@@ -317,7 +326,7 @@ export class ComplaintDetailComponent implements OnInit {
     });
   }
 
-  // ── Attachment Preview ─────────────────────────────────────────────────────
+  //  Attachment Preview ─
   openAttachment(att: any): void {
     this.previewAttachment.set(att);
     this.isPreviewLoading.set(true);
@@ -364,7 +373,7 @@ export class ComplaintDetailComponent implements OnInit {
     }
   }
 
-  // ── Utilities ──────────────────────────────────────────────────────────────
+  //  Utilities 
   isImage(mimeType?: string): boolean {
     if (!mimeType) return false;
     const t = mimeType.toLowerCase();

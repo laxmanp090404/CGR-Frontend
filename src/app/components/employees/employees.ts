@@ -1,7 +1,10 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { Subject, timer, of } from 'rxjs';
+import { debounce, switchMap } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { EmployeeService } from '../../services/employee.service';
 import { LookupService, DepartmentLookupDto } from '../../services/lookup.service';
@@ -31,6 +34,9 @@ export class EmployeesComponent implements OnInit {
   private readonly lookupService = inject(LookupService);
   private readonly roleRequestService = inject(RoleRequestService);
   private readonly toast = inject(ToastService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly loadSubject = new Subject<{ searchChanged: boolean }>();
+  private previousSearch = '';
 
   readonly navItems = signal<NavItem[]>(getNavItems('ADMIN'));
 
@@ -89,6 +95,7 @@ export class EmployeesComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadLookups();
+    this.setupLoadStream();
     this.loadEmployees();
   }
 
@@ -104,44 +111,53 @@ export class EmployeesComponent implements OnInit {
     });
   }
 
-  loadEmployees(): void {
-    this.isLoading.set(true);
+  setupLoadStream(): void {
+    this.loadSubject.pipe(
+      debounce((item) => item.searchChanged ? timer(300) : of(null)),
+      switchMap(() => {
+        this.isLoading.set(true);
+        const isActiveParam =
+          this.activeStatus() === 'active'
+            ? true
+            : this.activeStatus() === 'inactive'
+            ? false
+            : null;
+        return this.employeeService.getEmployees(
+          this.currentPage(),
+          this.pageSize(),
+          isActiveParam,
+          this.selectedRoleId(),
+          this.selectedDeptId(),
+          this.search()
+        );
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: (res) => {
+        this.employees.set(res.items);
+        this.totalCount.set(res.totalCount);
+        this.totalPages.set(Math.ceil(res.totalCount / this.pageSize()));
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.toast.error('Failed to load employees list.');
+        this.isLoading.set(false);
+      },
+    });
+  }
 
-    const isActiveParam =
-      this.activeStatus() === 'active'
-        ? true
-        : this.activeStatus() === 'inactive'
-        ? false
-        : null;
-
-    this.employeeService
-      .getEmployees(
-        this.currentPage(),
-        this.pageSize(),
-        isActiveParam,
-        this.selectedRoleId(),
-        this.selectedDeptId(),
-        this.search()
-      )
-      .subscribe({
-        next: (res) => {
-          this.employees.set(res.items);
-          this.totalCount.set(res.totalCount);
-          this.totalPages.set(Math.ceil(res.totalCount / this.pageSize()));
-          this.isLoading.set(false);
-        },
-        error: () => {
-          this.toast.error('Failed to load employees list.');
-          this.isLoading.set(false);
-        },
-      });
+  loadEmployees(searchChanged = false): void {
+    this.loadSubject.next({ searchChanged });
   }
 
   // ── Filtering Actions ────────────────────────────────────────
   onSearchChange(val: string): void {
+    const trimmed = val.trim();
+    if (trimmed === this.previousSearch) return;
+    this.previousSearch = trimmed;
     this.search.set(val);
     this.currentPage.set(1);
-    this.loadEmployees();
+    this.loadEmployees(true);
   }
 
   onStatusChange(val: string): void {

@@ -1,6 +1,9 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { Subject, timer, of } from 'rxjs';
+import { debounce, switchMap } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { ComplaintService } from '../../../services/complaint.service';
 import { ToastService } from '../../../shared/services/toast.service';
@@ -44,39 +47,52 @@ export class MyWorkQueueComponent {
     return role ? getNavItems(role) : [];
   });
 
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly filterSubject = new Subject<{ searchChanged: boolean }>();
+
   constructor() {
     const userDeptId = this.tokenStorage.getDepartmentId();
     if (!this.isAdmin() && userDeptId) {
       this.departmentId.set(userDeptId);
     }
+    this.setupFilterStream();
     this.loadQueue();
   }
 
-  loadQueue(): void {
-    this.isLoading.set(true);
-    this.complaintService
-      .getMyWorkQueue(
-        this.currentPage(),
-        this.pageSize(),
-        this.statusId(),
-        this.priorityId(),
-        this.categoryId(),
-        this.departmentId(),
-        this.searchQuery()
-      )
-      .subscribe({
-        next: (res) => {
-          this.result.set(res);
-          this.isLoading.set(false);
-        },
-        error: () => {
-          this.toast.error('Failed to load work queue.');
-          this.isLoading.set(false);
-        },
-      });
+  setupFilterStream(): void {
+    this.filterSubject.pipe(
+      debounce((item) => item.searchChanged ? timer(300) : of(null)),
+      switchMap(() => {
+        this.isLoading.set(true);
+        return this.complaintService.getMyWorkQueue(
+          this.currentPage(),
+          this.pageSize(),
+          this.statusId(),
+          this.priorityId(),
+          this.categoryId(),
+          this.departmentId(),
+          this.searchQuery()
+        );
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: (res) => {
+        this.result.set(res);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.toast.error('Failed to load work queue.');
+        this.isLoading.set(false);
+      },
+    });
+  }
+
+  loadQueue(searchChanged = false): void {
+    this.filterSubject.next({ searchChanged });
   }
 
   onFilterChanged(filters: ComplaintFilterParams): void {
+    const searchChanged = filters.search !== this.searchQuery();
     this.statusId.set(filters.statusId);
     this.priorityId.set(filters.priorityId);
     this.categoryId.set(filters.categoryId);
@@ -89,7 +105,7 @@ export class MyWorkQueueComponent {
     this.searchQuery.set(filters.search);
     this.pageSize.set(filters.pageSize);
     this.currentPage.set(1); // Reset to page 1
-    this.loadQueue();
+    this.loadQueue(searchChanged);
   }
 
   goToPage(page: number): void {

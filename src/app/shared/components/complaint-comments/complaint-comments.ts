@@ -128,4 +128,8 @@ export class ComplaintCommentsComponent implements OnInit {
       .join('')
       .toUpperCase();
   }
+
+  hasUnsavedChanges(): boolean {
+    return this.commentText().trim().length > 0;
+  }
 }
