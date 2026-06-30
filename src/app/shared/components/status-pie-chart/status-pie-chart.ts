@@ -73,15 +73,20 @@ export class StatusPieChartComponent implements OnDestroy {
     return { labels, dataPoints, colors };
   }
 
-  private getColorForStatus(status: string): string {
-    const statusUpper = status.toUpperCase();
-    if (statusUpper.includes('OPEN') || statusUpper.includes('SUBMITTED')) return '#455e91'; // Blue / Primary Tint
-    if (statusUpper.includes('PROGRESS')) return '#fea619'; // Amber / Warning
-    if (statusUpper.includes('RESOLVED') || statusUpper.includes('CLOSED')) return '#26ac52'; // Green / Success
-    if (statusUpper.includes('REJECTED')) return '#ba1a1a'; // Red / Danger
-    if (statusUpper.includes('ESCALATED')) return '#9c27b0'; // Purple / Escalated
-    return '#747780'; // Grey fallback
+ private getColorForStatus(status: string): string {
+  const statusUpper = status.toUpperCase();
+  if (statusUpper.includes('SUBMITTED')) return '#3B82F6';   
+  if (statusUpper.includes('ASSIGNED')) return '#F59E0B';    
+  if (statusUpper.includes('PROGRESS')) return '#D97706';    
+  if (statusUpper.includes('RESOLVED') || statusUpper.includes('CLOSED')) {
+    return statusUpper.includes('CLOSED') ? '#6B7280' : '#10B981'; 
   }
+  if (statusUpper.includes('REJECTED')) return '#DC2626';   
+  if (statusUpper.includes('REOPENED')) return '#F97316';    
+  if (statusUpper.includes('EXTERNALLY')) return '#260068ff';  
+  if (statusUpper.includes('ESCALATED')) return '#7C3AED';   
+  return '#6B7280'; 
+}
 
   private getChartConfig(): ChartConfiguration<'doughnut'> {
     const { labels, dataPoints, colors } = this.processData(this.data());

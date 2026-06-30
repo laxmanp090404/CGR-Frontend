@@ -53,7 +53,7 @@ export const routes: Routes = [
   { path: 'admin/departments',     component: DepartmentsComponent,        canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
   { path: 'admin/categories',      component: CategoriesComponent,         canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
   { path: 'admin/role-requests',   component: RoleRequestsComponent,       canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
-  { path: 'admin/gro-workload',    loadComponent: () => import('./components/gro-workload/gro-workload').then(m => m.GroWorkloadComponent), canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
+  { path: 'admin/workload',    loadComponent: () => import('./components/gro-workload/gro-workload').then(m => m.GroWorkloadComponent), canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
 
   // Department Head
   { path: 'dept-head/dashboard',             component: DeptHeadDashboardComponent,    canActivate: [authGuard, roleGuard], data: { roles: ['DEPARTMENT_HEAD'] } },

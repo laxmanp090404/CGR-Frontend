@@ -40,7 +40,7 @@ export function getNavItems(role: Role): NavItem[] {
         { label: 'Employees', route: '/admin/employees', icon: 'employees' },
         { label: 'Departments', route: '/admin/departments', icon: 'departments' },
         { label: 'Categories', route: '/admin/categories', icon: 'categories' },
-        { label: 'GRO Workload', route: '/admin/gro-workload', icon: 'work-queue' },
+        { label: 'Workload', route: '/admin/workload', icon: 'work-queue' },
         { label: 'Department-wise Analytics', route: '/admin/department-wise-analytics', icon: 'chart' },
       ];
     default:

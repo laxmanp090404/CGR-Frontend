@@ -47,6 +47,14 @@ export class EmployeeService {
     return this.http.get<any[]>(url);
   }
 
+  getDeptHeadWorkload(departmentId?: number | null): Observable<any[]> {
+    let url = `${this.apiBase}/depthead-workload`;
+    if (departmentId) {
+      url += `?departmentId=${departmentId}`;
+    }
+    return this.http.get<any[]>(url);
+  }
+
   getEmployeeById(employeeId: number): Observable<EmployeeDto> {
     return this.http.get<EmployeeDto>(`${this.apiBase}/${employeeId}`);
   }

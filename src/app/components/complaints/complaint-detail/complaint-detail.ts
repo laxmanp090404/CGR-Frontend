@@ -186,7 +186,7 @@ export class ComplaintDetailComponent implements OnInit, HasUnsavedChanges {
     6: { label: 'Closed',               textColor: '#6B7280', bgColor: '#F3F4F6' },
     7: { label: 'Rejected',             textColor: '#DC2626', bgColor: '#FEE2E2' },
     8: { label: 'Reopened',             textColor: '#F97316', bgColor: '#FFEDD5' },
-    9: { label: 'Externally Escalated', textColor: '#7C3AED', bgColor: '#EDE9FE' },
+    9: { label: 'Externally Escalated', textColor: '#260068ff', bgColor: '#EDE9FE' },
   };
 
   //  Lifecycle 

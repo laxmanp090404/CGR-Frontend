@@ -48,7 +48,7 @@ export class DashboardShellComponent {
           url.includes('/admin/categories') || 
           url.includes('/admin/employees') || 
           url.includes('/admin/role-requests') ||
-          url.includes('/admin/gro-workload')) {
+          url.includes('/admin/workload')) {
         return 'system';
       }
       return 'home';
@@ -88,7 +88,7 @@ export class DashboardShellComponent {
         '/admin/categories',
         '/admin/employees',
         '/admin/role-requests',
-        '/admin/gro-workload'
+        '/admin/workload'
       ];
       if (active === 'system') {
         return items.filter(item => systemRoutes.includes(item.route));

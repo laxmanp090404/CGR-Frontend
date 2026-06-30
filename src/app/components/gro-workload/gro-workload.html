@@ -1,5 +1,41 @@
-<app-dashboard-shell [navItems]="navItems()" [title]="isAdmin() ? 'System: GRO Workload Tracking' : 'GRO Workload'">
+<app-dashboard-shell [navItems]="navItems()" [title]="isAdmin() ? (activeWorkloadType() === 'GRO' ? 'System: GRO Workload Tracking' : 'System: Department Head Workload Tracking') : 'GRO Workload'">
   <div class="workload-container">
+    
+    <!-- Segmented Picker (Admin Only) -->
+    @if (isAdmin()) {
+      <div class="segmented-control-wrapper">
+        <div class="segmented-control">
+          <button 
+            type="button" 
+            class="segment-btn" 
+            [class.active]="activeWorkloadType() === 'GRO'" 
+            (click)="setWorkloadType('GRO')"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            GRO Workload
+          </button>
+          <button 
+            type="button" 
+            class="segment-btn" 
+            [class.active]="activeWorkloadType() === 'DEPT_HEAD'" 
+            (click)="setWorkloadType('DEPT_HEAD')"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            Department Head Workload
+          </button>
+        </div>
+      </div>
+    }
     
     <!-- Filters Row -->
     <div class="filters-card">
@@ -7,7 +43,7 @@
         
         <!-- Search -->
         <div class="filter-field">
-          <label class="filter-label" for="search-gro">Search GRO</label>
+          <label class="filter-label" for="search-gro">Search {{ activeWorkloadType() === 'DEPT_HEAD' ? 'Department Head' : 'GRO' }}</label>
           <div class="search-input-wrapper">
             <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"></circle>
@@ -77,7 +113,7 @@
     @if (isLoading()) {
       <div class="loading-state">
         <span class="spinner spinner-large"></span>
-        <p>Loading active workload data...</p>
+        <p>Loading active {{ activeWorkloadType() === 'DEPT_HEAD' ? 'Department Head' : 'GRO' }} workload data...</p>
       </div>
     } @else if (error()) {
       <div class="error-state">
@@ -97,7 +133,7 @@
           <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
           <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
         </svg>
-        <p>No GRO workload records found matching the current filters.</p>
+        <p>No {{ activeWorkloadType() === 'DEPT_HEAD' ? 'Department Head' : 'GRO' }} workload records found matching the current filters.</p>
         <button class="btn btn-outline" (click)="clearFilters()">Clear Filters</button>
       </div>
     } @else {

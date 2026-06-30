@@ -36,6 +36,9 @@ export class GroWorkloadComponent implements OnInit {
   readonly selectedDepartmentId = signal<number | null>(null);
   readonly sortBy = signal<string>('workload-desc'); // workload-desc, workload-asc, complaints-desc, name-asc
 
+  // Active Workload Tab (for ADMIN only)
+  readonly activeWorkloadType = signal<'GRO' | 'DEPT_HEAD'>('GRO');
+
   // Computed filtered & sorted list
   readonly filteredWorkloads = computed(() => {
     let list = [...this.workloads()];
@@ -95,16 +98,31 @@ export class GroWorkloadComponent implements OnInit {
       });
     }
 
-    this.employeeService.getGroWorkload().subscribe({
+    const isDeptHeadType = this.isAdmin() && this.activeWorkloadType() === 'DEPT_HEAD';
+    const fetch$ = isDeptHeadType
+      ? this.employeeService.getDeptHeadWorkload()
+      : this.employeeService.getGroWorkload();
+
+    fetch$.subscribe({
       next: (data) => {
         this.workloads.set(data);
         this.isLoading.set(false);
       },
       error: (err) => {
-        this.error.set(err?.error?.message || 'Failed to retrieve GRO workload data.');
+        const errorMsg = isDeptHeadType
+          ? 'Failed to retrieve Department Head workload data.'
+          : 'Failed to retrieve GRO workload data.';
+        this.error.set(err?.error?.message || errorMsg);
         this.isLoading.set(false);
       }
     });
+  }
+
+  setWorkloadType(type: 'GRO' | 'DEPT_HEAD'): void {
+    if (this.activeWorkloadType() === type) return;
+    this.activeWorkloadType.set(type);
+    this.clearFilters();
+    this.loadData();
   }
 
   clearFilters(): void {
