@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { forkJoin } from 'rxjs';
 
@@ -47,6 +47,18 @@ export class AdminDashboardComponent {
   readonly topCatsChartData = signal<BarChartItem[]>([]);
   readonly priorityChartData = signal<BarChartItem[]>([]);
   readonly deptComplaintsChartData = signal<BarChartItem[]>([]);
+  readonly topCatsLimit = signal<number>(5);
+
+  readonly priorityChartColors = computed(() => {
+    return this.priorityChartData().map((item) => {
+      const label = item.label.toLowerCase();
+      if (label.includes('critical')) return '#dc0000'; 
+      if (label.includes('high')) return '#fd8c00';    
+      if (label.includes('medium')) return '#fea619';  
+      if (label.includes('low')) return '#00ac46';      
+      return '#888888';                                
+    });
+  });
 
   readonly navItems = signal<NavItem[]>(getNavItems('ADMIN'));
 
@@ -68,7 +80,7 @@ export class AdminDashboardComponent {
     forkJoin({
       admin: this.analyticsService.getAdminDashboard(),
       statusDist: this.analyticsService.getStatusDistribution(),
-      topCats: this.analyticsService.getTopCategories(5),
+      topCats: this.analyticsService.getTopCategories(this.topCatsLimit()),
       summary: this.analyticsService.getComplaintSummary(),
       deptBoards: this.analyticsService.getDepartmentDashboard(),
     }).subscribe({
@@ -77,7 +89,6 @@ export class AdminDashboardComponent {
         this.statusDist.set(res.statusDist);
         this.deptBoards.set(res.deptBoards);
 
-        // Update nav badges
         this.navItems.update((items) =>
           items.map((item) => {
             if (item.label === 'Complaint Requests') {
@@ -90,11 +101,9 @@ export class AdminDashboardComponent {
           })
         );
 
-        // Also update shared signals
         this.analyticsService.pendingComplaintRequests.set(res.admin.pendingComplaintRequests);
         this.analyticsService.pendingRoleRequests.set(res.admin.pendingRoleRequests);
 
-        // Map top categories chart
         this.topCatsChartData.set(
           res.topCats.map((c) => ({
             label: c.categoryName,
@@ -102,7 +111,6 @@ export class AdminDashboardComponent {
           }))
         );
 
-        // Map priority breakdown chart
         this.priorityChartData.set(
           res.summary.byPriority.map((p) => ({
             label: p.priorityName,
@@ -110,7 +118,6 @@ export class AdminDashboardComponent {
           }))
         );
 
-        // Map department complaints chart
         this.deptComplaintsChartData.set(
           res.deptBoards.map((d) => ({
             label: d.departmentName,
@@ -125,6 +132,33 @@ export class AdminDashboardComponent {
         this.isLoading.set(false);
       },
     });
+  }
+
+  loadTopCategories(): void {
+    this.analyticsService.getTopCategories(this.topCatsLimit()).subscribe({
+      next: (cats) => {
+        this.topCatsChartData.set(
+          cats.map((c) => ({
+            label: c.categoryName,
+            value: c.complaintCount,
+          }))
+        );
+      },
+      error: () => {
+        this.toast.error('Failed to load top categories');
+      }
+    });
+  }
+
+  onTopCatsLimitChange(event: Event): void {
+    const inputEl = event.target as HTMLInputElement;
+    let value = parseInt(inputEl.value, 10);
+    if (isNaN(value) || value < 1) {
+      value = 5;
+      inputEl.value = '5';
+    }
+    this.topCatsLimit.set(value);
+    this.loadTopCategories();
   }
 
   getSlaClass(percent: number | null): string {

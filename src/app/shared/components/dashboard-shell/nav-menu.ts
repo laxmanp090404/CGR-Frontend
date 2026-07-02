@@ -16,6 +16,7 @@ export function getNavItems(role: Role): NavItem[] {
         { label: 'File a Complaint', route: '/gro/raise-complaint', icon: 'raise' },
         { label: 'My Filed Complaints', route: '/gro/my-filed-complaints', icon: 'requests' },
         { label: 'My Work Queue', route: '/gro/my-work-queue', icon: 'work-queue' },
+        { label: 'Handled Complaints', route: '/gro/handled-complaints', icon: 'requests' },
         { label: 'Complaint Requests', route: '/gro/complaint-requests', icon: 'requests' },
         { label: 'My Profile', route: '/gro/profile', icon: 'profile' },
       ];

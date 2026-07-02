@@ -46,6 +46,7 @@ export class DeptHeadDashboardComponent {
   readonly topCatsChartData = signal<BarChartItem[]>([]);
   readonly priorityChartData = signal<BarChartItem[]>([]);
   readonly priorityColors = signal<string[]>([]);
+  readonly topCatsLimit = signal<number>(5);
 
   readonly escalationRate = signal<number>(0);
 
@@ -62,7 +63,7 @@ export class DeptHeadDashboardComponent {
     this.isLoading.set(true);
     forkJoin({
       deptBoards: this.analyticsService.getDepartmentDashboard(),
-      topCats: this.analyticsService.getTopCategories(5),
+      topCats: this.analyticsService.getTopCategories(this.topCatsLimit()),
       summary: this.analyticsService.getComplaintSummary(),
     }).subscribe({
       next: (res) => {
@@ -72,7 +73,6 @@ export class DeptHeadDashboardComponent {
           this.toast.error('Department data unavailable.');
         }
 
-        // Map top categories
         this.topCatsChartData.set(
           res.topCats.map((c) => ({
             label: c.categoryName,
@@ -80,7 +80,6 @@ export class DeptHeadDashboardComponent {
           }))
         );
 
-        // Map priorities with colour array
         const priorityItems = res.summary.byPriority.map((p) => ({
           label: p.priorityName,
           value: p.count,
@@ -92,7 +91,6 @@ export class DeptHeadDashboardComponent {
           )
         );
 
-        // Calculate escalation rate
         if (res.summary.totalComplaints > 0) {
           const rate = (res.summary.escalatedComplaints / res.summary.totalComplaints) * 100;
           this.escalationRate.set(Math.round(rate * 10) / 10);
@@ -107,6 +105,33 @@ export class DeptHeadDashboardComponent {
         this.isLoading.set(false);
       },
     });
+  }
+
+  loadTopCategories(): void {
+    this.analyticsService.getTopCategories(this.topCatsLimit()).subscribe({
+      next: (cats) => {
+        this.topCatsChartData.set(
+          cats.map((c) => ({
+            label: c.categoryName,
+            value: c.complaintCount,
+          }))
+        );
+      },
+      error: () => {
+        this.toast.error('Failed to load top categories');
+      }
+    });
+  }
+
+  onTopCatsLimitChange(event: Event): void {
+    const inputEl = event.target as HTMLInputElement;
+    let value = parseInt(inputEl.value, 10);
+    if (isNaN(value) || value < 1) {
+      value = 5;
+      inputEl.value = '5';
+    }
+    this.topCatsLimit.set(value);
+    this.loadTopCategories();
   }
 
   getSlaClass(percent: number | null | undefined): string {

@@ -21,7 +21,7 @@ function parseId(val: any): number | null {
 export class ComplaintFilterComponent implements OnInit {
   private readonly lookupService = inject(LookupService);
 
-  // Signal Inputs for Initial/Controlled Values
+  
   readonly statusId = input<number | null>(null);
   readonly priorityId = input<number | null>(null);
   readonly categoryId = input<number | null>(null);
@@ -31,16 +31,14 @@ export class ComplaintFilterComponent implements OnInit {
   readonly pageSize = input<number>(10);
   readonly sortBy = input<string>('filed_newest');
 
-  // Configuration control inputs
+  
   readonly showDepartmentFilter = input<boolean>(true);
   readonly showRaisedByMeFilter = input<boolean>(true);
   readonly showCategoryFilter = input<boolean>(true);
   readonly disableDepartmentFilter = input<boolean>(false);
 
-  // Output event emitter
   readonly filterChange = output<ComplaintFilterParams>();
 
-  // Local state signals
   readonly localSearch = signal<string>('');
   readonly localStatusId = signal<number | null>(null);
   readonly localPriorityId = signal<number | null>(null);
@@ -52,13 +50,11 @@ export class ComplaintFilterComponent implements OnInit {
   readonly isCustomPageSize = signal<boolean>(false);
   readonly pageSizeDropdownValue = signal<string>('10');
 
-  // Lookup lists data
   readonly priorities = signal<PriorityDto[]>([]);
   readonly statuses = signal<ComplaintStatusDto[]>([]);
   readonly categories = signal<CategoryDto[]>([]);
   readonly departments = signal<DepartmentLookupDto[]>([]);
 
-  // Computed signal to filter categories by selected department
   readonly filteredCategories = computed(() => {
     const deptId = this.localDepartmentId();
     const allCats = this.categories();
@@ -67,7 +63,6 @@ export class ComplaintFilterComponent implements OnInit {
   });
 
   constructor() {
-    // Sync initial/incoming inputs to local signals
     effect(() => {
       this.localSearch.set(this.search() ?? '');
     });
@@ -107,7 +102,7 @@ export class ComplaintFilterComponent implements OnInit {
       next: (list) => this.priorities.set(list),
     });
     this.lookupService.getComplaintStatuses().subscribe({
-      next: (list) => this.statuses.set(list),
+      next: (list) => this.statuses.set(list.filter(s => s.statusId !== 1)),
     });
     this.lookupService.getCategories(true).subscribe({
       next: (list) => this.categories.set(list),

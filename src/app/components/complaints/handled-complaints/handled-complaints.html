@@ -1,19 +1,15 @@
-<app-dashboard-shell [navItems]="navItems()" title="My Work Queue">
+<app-dashboard-shell [navItems]="navItems()" [title]="pageTitle">
   <div class="page-header-row">
     <div>
-      <h2 class="section-title">My Work Queue</h2>
-      <p class="section-desc">Complaints currently assigned to you for handling.</p>
+      <h2 class="section-title">{{ pageTitle }}</h2>
+      <p class="section-desc">{{ pageDescription }}</p>
     </div>
-    <button class="btn btn-secondary" id="refresh-queue-btn" (click)="loadQueue()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-      Refresh
-    </button>
   </div>
 
   <app-complaint-filter
     [showRaisedByMeFilter]="false"
+    [disableDepartmentFilter]="true"
     [departmentId]="deptId()"
-    [disableDepartmentFilter]="!isAdmin()"
     (filterChange)="onFilterChanged($event)"
   />
 
@@ -22,14 +18,15 @@
   } @else if (result(); as data) {
     @if (data.items.length === 0) {
       <div class="empty-state">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        <h3>Work queue is empty</h3>
-        <p>You have no complaints currently assigned to you.</p>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+        <h3>No complaints found</h3>
+        <p>There are no complaints you have processed/handled yet.</p>
       </div>
     } @else {
+      <!-- Table -->
       <div class="table-card">
         <div class="table-wrapper">
-          <table class="data-table" id="work-queue-table">
+          <table class="data-table" id="handled-complaints-table">
             <thead>
               <tr>
                 <th>#</th>
@@ -38,6 +35,7 @@
                 <th>Department</th>
                 <th>Priority</th>
                 <th>Status</th>
+                <th>Handler</th>
                 <th>Filed On</th>
                 <th>Escalation Due</th>
               </tr>
@@ -63,6 +61,7 @@
                       {{ item.statusName }}
                     </span>
                   </td>
+                  <td>{{ item.currentHandlerName ?? '—' }}</td>
                   <td>{{ item.createdAt | date: 'dd-MM-yyyy hh:mm a' }}</td>
                   <td>
                     @if (item.escalationDueAt) {
@@ -82,15 +81,15 @@
         <!-- Pagination -->
         @if (data.totalPages > 1) {
           <div class="pagination">
-            <button class="page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)" id="prev-queue-page-btn">
+            <button class="page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)" id="prev-page-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
             @for (p of pages; track p) {
-              <button class="page-btn" [class.page-btn--active]="p === currentPage()" (click)="goToPage(p)" [id]="'queue-page-' + p">
+              <button class="page-btn" [class.page-btn--active]="p === currentPage()" (click)="goToPage(p)" [id]="'page-' + p">
                 {{ p }}
               </button>
             }
-            <button class="page-btn" [disabled]="currentPage() === data.totalPages" (click)="goToPage(currentPage() + 1)" id="next-queue-page-btn">
+            <button class="page-btn" [disabled]="currentPage() === data.totalPages" (click)="goToPage(currentPage() + 1)" id="next-page-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </button>
           </div>

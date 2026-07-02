@@ -68,6 +68,9 @@
 .chart-card__header {
   padding: var(--space-4) var(--space-6);
   border-bottom: var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .chart-card__title {
@@ -75,6 +78,23 @@
   font-size: 15px;
   font-weight: 600;
   color: var(--color-on-surface);
+}
+
+.limit-input {
+  width: 64px;
+  background-color: var(--color-surface-container-high);
+  color: var(--color-on-surface);
+  border: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color var(--transition-fast);
+  text-align: center;
+
+  &:focus {
+    border-color: var(--color-primary);
+  }
 }
 
 .chart-card__body {

@@ -18,7 +18,7 @@
         <app-kpi-card label="Overdue" [value]="dept.overdueComplaints" icon="overdue" colorVariant="danger"></app-kpi-card>
         <app-kpi-card label="SLA Compliance" [value]="dept.slaCompliancePercent !== null ? (dept.slaCompliancePercent + '%') : '—'" icon="sla" [colorVariant]="getSlaClass(dept.slaCompliancePercent) === 'badge--success' ? 'success' : (getSlaClass(dept.slaCompliancePercent) === 'badge--warning' ? 'warning' : 'danger')"></app-kpi-card>
         <app-kpi-card label="Avg. Resolution" [value]="dept.avgResolutionHours !== null ? (dept.avgResolutionHours + 'h') : '—'" icon="overdue" colorVariant="primary"></app-kpi-card>
-        <app-kpi-card label="Escalation Rate" [value]="escalationRate() + '%'" icon="sla" colorVariant="warning"></app-kpi-card>
+        <app-kpi-card label="External Escalation Rate" [value]="escalationRate() + '%'" icon="sla" colorVariant="warning"></app-kpi-card>
       </div>
 
       <div class="charts-row">
@@ -34,8 +34,20 @@
 
         <!-- Top Categories -->
         <div class="chart-card">
-          <div class="chart-card__header">
-            <h3 class="chart-card__title">Top Categories</h3>
+          <div class="chart-card__header d-flex align-items-center justify-content-between">
+            <h3 class="chart-card__title">Top {{ topCatsLimit() }} Categories</h3>
+            <div class="top-cats-limit-input-container">
+              <label for="deptTopCatsLimit" class="visually-hidden">Limit</label>
+              <input 
+                id="deptTopCatsLimit"
+                type="number" 
+                class="form-control form-control-sm limit-input" 
+                [value]="topCatsLimit()" 
+                (change)="onTopCatsLimitChange($event)"
+                min="1" 
+                step="1"
+              />
+            </div>
           </div>
           <div class="chart-card__body">
             <app-bar-chart [data]="topCatsChartData()" title="Complaints" layout="vertical" colorVariant="primary"></app-bar-chart>

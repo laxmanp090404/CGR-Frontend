@@ -13,6 +13,7 @@ import { DashboardShellComponent, NavItem } from '../../shared/components/dashbo
 import { TableSkeletonComponent } from '../../shared/components/table-skeleton/table-skeleton';
 import { getNavItems } from '../../shared/components/dashboard-shell/nav-menu';
 import { DepartmentDto } from '../../models/department.model';
+import { HasUnsavedChanges } from '../../guards/deactivate.guard';
 
 interface SimpleEmployee {
   employeeId: number;
@@ -33,7 +34,7 @@ interface SimpleEmployee {
   templateUrl: './departments.html',
   styleUrl: './departments.scss',
 })
-export class DepartmentsComponent implements OnInit {
+export class DepartmentsComponent implements OnInit, HasUnsavedChanges {
   private readonly fb = inject(FormBuilder);
   private readonly departmentService = inject(DepartmentApiService);
   private readonly employeeService = inject(EmployeeService);
@@ -43,24 +44,20 @@ export class DepartmentsComponent implements OnInit {
 
   readonly navItems = signal<NavItem[]>(getNavItems('ADMIN'));
 
-  //  State Signals 
   readonly isLoading = signal(true);
   readonly isActionLoading = signal(false);
   readonly departments = signal<DepartmentDto[]>([]);
   readonly activeStatus = signal<string>('all');
   readonly safetyChecked = signal<boolean>(false);
 
-  //  Dropdown Choices Signal 
   readonly eligibleHeads = signal<SimpleEmployee[]>([]);
 
-  //  Custom Dropdown State Signals 
   readonly dropdownSearchText = signal<string>('');
   readonly dropdownPage = signal<number>(1);
   readonly dropdownHasMore = signal<boolean>(true);
   readonly dropdownIsLoading = signal<boolean>(false);
   readonly isDropdownOpen = signal<boolean>(false);
 
-  // Computed signal for selected employee display name
   readonly selectedHeadName = computed(() => {
     const isEdit = this.isEditModalOpen();
     const form = isEdit ? this.editForm : this.createForm;
@@ -78,13 +75,11 @@ export class DepartmentsComponent implements OnInit {
     return 'None - No head assigned';
   });
 
-  //  Modal State Signals 
   readonly isCreateModalOpen = signal(false);
   readonly isEditModalOpen = signal(false);
   readonly isViewModalOpen = signal(false);
   readonly selectedDept = signal<DepartmentDto | null>(null);
 
-  //  Forms 
   readonly createForm: FormGroup = this.fb.group({
     departmentName: ['', [Validators.required, Validators.maxLength(100)]],
     departmentHeadEmployeeId: [''],
@@ -222,7 +217,6 @@ export class DepartmentsComponent implements OnInit {
     }
   }
 
-  // Filtering Actions 
   onStatusChange(val: string): void {
     this.activeStatus.set(val);
     this.loadDepartments();
@@ -233,7 +227,6 @@ export class DepartmentsComponent implements OnInit {
     this.loadDepartments();
   }
 
-  //  View Modal Actions 
   openViewModal(dept: DepartmentDto): void {
     this.isActionLoading.set(true);
     this.departmentService.getDepartmentById(dept.departmentId).subscribe({
@@ -254,7 +247,6 @@ export class DepartmentsComponent implements OnInit {
     this.selectedDept.set(null);
   }
 
-  //  Create Modal Actions 
   openCreateModal(): void {
     this.createForm.reset({
       departmentName: '',
@@ -269,7 +261,18 @@ export class DepartmentsComponent implements OnInit {
   }
 
   closeCreateModal(): void {
-    this.isCreateModalOpen.set(false);
+    if (this.isCreateModalOpen() && this.createForm.dirty) {
+      if (confirm('You have unsaved changes in the creation form. Are you sure you want to discard them?')) {
+        this.createForm.reset();
+        this.isCreateModalOpen.set(false);
+      }
+    } else {
+      this.isCreateModalOpen.set(false);
+    }
+  }
+
+  hasUnsavedChanges(): boolean {
+    return this.isCreateModalOpen() && this.createForm.dirty;
   }
 
   onCreateSubmit(): void {
@@ -289,6 +292,7 @@ export class DepartmentsComponent implements OnInit {
       next: (created) => {
         this.toast.success(`Successfully created department ${created.departmentName}`);
         this.isActionLoading.set(false);
+        this.createForm.reset();
         this.closeCreateModal();
         this.loadDepartments();
       },
@@ -300,7 +304,6 @@ export class DepartmentsComponent implements OnInit {
     });
   }
 
-  //  Edit Modal Actions 
   openEditModal(dept: DepartmentDto): void {
     this.selectedDept.set(dept);
     this.editForm.reset({
@@ -355,7 +358,6 @@ export class DepartmentsComponent implements OnInit {
     });
   }
 
-  // Helper to merge current head into dropdown list
   getEditEligibleHeads(currentHeadId?: number | null): SimpleEmployee[] {
     const list = [...this.eligibleHeads()];
     const dept = this.selectedDept();

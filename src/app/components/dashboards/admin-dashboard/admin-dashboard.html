@@ -12,19 +12,19 @@
 
     <!-- KPI ROW 1: Complaint Volumes -->
     <h3 class="subsection-title">Complaint Counts</h3>
-    <div class="kpi-grid kpi-grid--6">
+    <div class="kpi-grid kpi-grid--7">
       <app-kpi-card label="Total Complaints" [value]="admin.totalComplaints" icon="total" colorVariant="primary"></app-kpi-card>
       <app-kpi-card label="Open" [value]="admin.openComplaints" icon="open" colorVariant="warning"></app-kpi-card>
       <app-kpi-card label="Resolved" [value]="admin.resolvedComplaints" icon="resolved" colorVariant="success"></app-kpi-card>
       <app-kpi-card label="Closed" [value]="admin.closedComplaints" icon="resolved" colorVariant="success"></app-kpi-card>
       <app-kpi-card label="Rejected" [value]="admin.rejectedComplaints" icon="rejected" colorVariant="danger"></app-kpi-card>
       <app-kpi-card label="Ext. Escalated" [value]="admin.externallyEscalatedComplaints" icon="overdue" colorVariant="danger"></app-kpi-card>
+      <app-kpi-card label="Overdue" [value]="admin.overdueComplaints" icon="overdue" colorVariant="danger"></app-kpi-card>
     </div>
 
     <!-- KPI ROW 2: Operations & Health -->
     <h3 class="subsection-title mt-6">Operations & System Health</h3>
-    <div class="kpi-grid kpi-grid--7">
-      <app-kpi-card label="Overdue" [value]="admin.overdueComplaints" icon="overdue" colorVariant="danger"></app-kpi-card>
+    <div class="kpi-grid kpi-grid--6">
       <app-kpi-card label="Complaint Requests" [value]="admin.pendingComplaintRequests" icon="requests" colorVariant="warning"></app-kpi-card>
       <app-kpi-card label="Role Requests" [value]="admin.pendingRoleRequests" icon="users" colorVariant="warning"></app-kpi-card>
       <app-kpi-card label="Active Employees" [value]="admin.activeEmployees" icon="users" colorVariant="primary"></app-kpi-card>
@@ -61,14 +61,26 @@
           <h3 class="chart-card__title">Complaints by Priority</h3>
         </div>
         <div class="chart-card__body">
-          <app-bar-chart [data]="priorityChartData()" title="Complaints" layout="vertical" colorVariant="secondary"></app-bar-chart>
+          <app-bar-chart [data]="priorityChartData()" [colors]="priorityChartColors()" title="Complaints" layout="vertical" colorVariant="secondary"></app-bar-chart>
         </div>
       </div>
 
       <!-- Top Categories -->
       <div class="chart-card">
-        <div class="chart-card__header">
-          <h3 class="chart-card__title">Top 5 Categories</h3>
+        <div class="chart-card__header d-flex align-items-center justify-content-between">
+          <h3 class="chart-card__title">Top {{ topCatsLimit() }} Categories</h3>
+          <div class="top-cats-limit-input-container">
+            <label for="adminTopCatsLimit" class="visually-hidden">Limit</label>
+            <input 
+              id="adminTopCatsLimit"
+              type="number" 
+              class="form-control form-control-sm limit-input" 
+              [value]="topCatsLimit()" 
+              (change)="onTopCatsLimitChange($event)"
+              min="1" 
+              step="1"
+            />
+          </div>
         </div>
         <div class="chart-card__body">
           <app-bar-chart [data]="topCatsChartData()" title="Complaints" layout="vertical" colorVariant="success"></app-bar-chart>

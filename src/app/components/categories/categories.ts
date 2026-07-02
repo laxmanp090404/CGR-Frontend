@@ -11,6 +11,7 @@ import { DashboardShellComponent, NavItem } from '../../shared/components/dashbo
 import { TableSkeletonComponent } from '../../shared/components/table-skeleton/table-skeleton';
 import { getNavItems } from '../../shared/components/dashboard-shell/nav-menu';
 import { CategoryDto, EscalationRuleEntryDto } from '../../models/category.model';
+import { HasUnsavedChanges } from '../../guards/deactivate.guard';
 
 @Component({
   selector: 'app-categories',
@@ -25,7 +26,7 @@ import { CategoryDto, EscalationRuleEntryDto } from '../../models/category.model
   templateUrl: './categories.html',
   styleUrl: './categories.scss',
 })
-export class CategoriesComponent implements OnInit {
+export class CategoriesComponent implements OnInit, HasUnsavedChanges {
   private readonly fb = inject(FormBuilder);
   private readonly categoryService = inject(CategoryService);
   private readonly departmentService = inject(DepartmentApiService);
@@ -34,7 +35,7 @@ export class CategoriesComponent implements OnInit {
 
   readonly navItems = signal<NavItem[]>(getNavItems('ADMIN'));
 
-  // ── State Signals ────────────────────────────────────────────
+ 
   readonly isLoading = signal(true);
   readonly isActionLoading = signal(false);
   readonly categories = signal<CategoryDto[]>([]);
@@ -46,24 +47,21 @@ export class CategoriesComponent implements OnInit {
   readonly pageSizeDropdownValue = signal<string>('10');
   readonly localPageSize = signal<number>(10);
 
-  // ── Filter Signals ───────────────────────────────────────────
   readonly activeStatus = signal<string>('all');
   readonly selectedDeptId = signal<number | null>(null);
 
-  // ── Lookup Signals ───────────────────────────────────────────
   readonly departments = signal<DepartmentLookupDto[]>([]);
   readonly priorities = signal<PriorityDto[]>([]);
 
-  // ── Modal State Signals ──────────────────────────────────────
+
   readonly isCreateModalOpen = signal(false);
   readonly isEditModalOpen = signal(false);
   readonly isViewModalOpen = signal(false);
   readonly selectedCategory = signal<CategoryDto | null>(null);
 
-  // Custom validation error message for escalation rules
+ 
   readonly validationErrorMsg = signal<string | null>(null);
 
-  // ── Forms ────────────────────────────────────────────────────
   readonly createForm: FormGroup = this.fb.group({
     categoryName: ['', [Validators.required, Validators.maxLength(100)]],
     departmentId: ['', [Validators.required]],
@@ -142,7 +140,6 @@ export class CategoriesComponent implements OnInit {
       });
   }
 
-  // ── Filtering Actions ────────────────────────────────────────
   onStatusChange(val: string): void {
     this.activeStatus.set(val);
     this.currentPage.set(1);
@@ -189,7 +186,6 @@ export class CategoriesComponent implements OnInit {
     this.loadCategories();
   }
 
-  // ── Pagination Actions ───────────────────────────────────────
   goToPage(page: number): void {
     if (page < 1 || page > this.totalPages()) return;
     this.currentPage.set(page);
@@ -205,7 +201,6 @@ export class CategoriesComponent implements OnInit {
     return arr;
   }
 
-  // Helper to fetch priority name by ID
   getPriorityName(id: number | string): string {
     const numericId = Number(id);
     const item = this.priorities().find((p) => p.priorityId === numericId);
@@ -221,7 +216,6 @@ export class CategoriesComponent implements OnInit {
     return 'priority--critical';
   }
 
-  // ── View Modal Actions ───────────────────────────────────────
   openViewModal(cat: CategoryDto): void {
     this.isActionLoading.set(true);
     this.categoryService.getCategoryById(cat.categoryId).subscribe({
@@ -242,7 +236,6 @@ export class CategoriesComponent implements OnInit {
     this.selectedCategory.set(null);
   }
 
-  // ── Create Modal Actions ─────────────────────────────────────
   openCreateModal(): void {
     this.validationErrorMsg.set(null);
     this.createForm.reset({
@@ -279,7 +272,18 @@ export class CategoriesComponent implements OnInit {
   }
 
   closeCreateModal(): void {
-    this.isCreateModalOpen.set(false);
+    if (this.isCreateModalOpen() && this.createForm.dirty) {
+      if (confirm('You have unsaved changes in the creation form. Are you sure you want to discard them?')) {
+        this.createForm.reset();
+        this.isCreateModalOpen.set(false);
+      }
+    } else {
+      this.isCreateModalOpen.set(false);
+    }
+  }
+
+  hasUnsavedChanges(): boolean {
+    return this.isCreateModalOpen() && this.createForm.dirty;
   }
 
   onCreateSubmit(): void {
@@ -309,6 +313,7 @@ export class CategoriesComponent implements OnInit {
       next: (created) => {
         this.toast.success(`Successfully created category ${created.categoryName}`);
         this.isActionLoading.set(false);
+        this.createForm.reset();
         this.closeCreateModal();
         this.loadCategories();
       },
@@ -320,7 +325,6 @@ export class CategoriesComponent implements OnInit {
     });
   }
 
-  // ── Edit Modal Actions ───────────────────────────────────────
   openEditModal(cat: CategoryDto): void {
     this.validationErrorMsg.set(null);
     this.selectedCategory.set(cat);
@@ -333,7 +337,6 @@ export class CategoriesComponent implements OnInit {
       isActive: cat.isActive,
     });
 
-    // Populate rules
     this.editRules.clear();
     cat.escalationRules.forEach((rule) => {
       this.editRules.push(
@@ -395,7 +398,6 @@ export class CategoriesComponent implements OnInit {
     });
   }
 
-  // Helper to find the index of a specific priority/level control in the escalationRules FormArray
   getRuleControlIndex(formType: 'create' | 'edit', priorityId: number, level: number): number {
     const rules = formType === 'create' ? this.createRules : this.editRules;
     return rules.controls.findIndex(
@@ -403,13 +405,11 @@ export class CategoriesComponent implements OnInit {
     );
   }
 
-  // Helper to find a specific rule by priority and level in a list of rules
   getRule(rules: EscalationRuleEntryDto[] | undefined, priorityId: number, level: number): EscalationRuleEntryDto | undefined {
     if (!rules) return undefined;
     return rules.find((r) => r.priorityId === priorityId && r.escalationLevel === level);
   }
 
-  // ── Custom Client-side Escalation Rules Validator ────────────
   private validateEscalationRules(rules: EscalationRuleEntryDto[]): string | null {
     if (!rules || rules.length !== 8) {
       return 'Exactly 8 escalation rules are required.';

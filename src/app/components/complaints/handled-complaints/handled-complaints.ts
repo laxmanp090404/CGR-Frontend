@@ -15,7 +15,7 @@ import { ComplaintFilterComponent } from '../../../shared/components/complaint-f
 import { getNavItems } from '../../../shared/components/dashboard-shell/nav-menu';
 
 @Component({
-  selector: 'app-my-filed-complaints',
+  selector: 'app-handled-complaints',
   standalone: true,
   imports: [
     CommonModule,
@@ -24,16 +24,14 @@ import { getNavItems } from '../../../shared/components/dashboard-shell/nav-menu
     TableSkeletonComponent,
     ComplaintFilterComponent,
   ],
-  templateUrl: './my-filed-complaints.html',
-  styleUrl: './my-filed-complaints.scss',
+  templateUrl: './handled-complaints.html',
+  styleUrl: './handled-complaints.scss',
 })
-export class MyFiledComplaintsComponent {
+export class HandledComplaintsComponent {
   private readonly complaintService = inject(ComplaintService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly tokenStorage = inject(TokenStorageService);
-
-  readonly user = this.tokenStorage.getUserName() ?? 'User';
 
   readonly isLoading = signal(true);
   readonly result = signal<PagedResultDto<ComplaintDashboardDto> | null>(null);
@@ -48,9 +46,10 @@ export class MyFiledComplaintsComponent {
   readonly searchQuery = signal<string>('');
   readonly sortBy = signal<string>('filed_newest');
 
-  readonly isAdmin = computed(() => this.tokenStorage.getRole() === 'ADMIN');
-  readonly pageTitle = computed(() => this.isAdmin() ? 'View Complaints' : 'My Filed Complaints');
-  readonly pageDescription = computed(() => this.isAdmin() ? 'List of all complaints registered in the system.' : 'All complaints you have submitted.');
+  readonly pageTitle = 'Handled Complaints';
+  readonly pageDescription = 'All complaints you have processed and handled as GRO.';
+
+  readonly deptId = computed(() => this.tokenStorage.getDepartmentId());
 
   readonly navItems = computed<NavItem[]>(() => {
     const role = this.tokenStorage.getRole();
@@ -61,6 +60,10 @@ export class MyFiledComplaintsComponent {
   private readonly filterSubject = new Subject<{ searchChanged: boolean }>();
 
   constructor() {
+    const userDeptId = this.tokenStorage.getDepartmentId();
+    if (userDeptId) {
+      this.departmentId.set(userDeptId);
+    }
     this.setupFilterStream();
     this.loadComplaints();
   }
@@ -70,7 +73,6 @@ export class MyFiledComplaintsComponent {
       debounce((item) => item.searchChanged ? timer(300) : of(null)),
       switchMap(() => {
         this.isLoading.set(true);
-        const raisedByMeVal = this.isAdmin() ? false : true;
         return this.complaintService.getPagedComplaints(
           this.currentPage(),
           this.pageSize(),
@@ -79,8 +81,9 @@ export class MyFiledComplaintsComponent {
           this.categoryId(),
           this.departmentId(),
           this.searchQuery(),
-          raisedByMeVal,
-          this.sortBy()
+          false, // raisedByMe = false
+          this.sortBy(),
+          true  // handledByMe = true
         );
       }),
       takeUntilDestroyed(this.destroyRef)
@@ -105,7 +108,12 @@ export class MyFiledComplaintsComponent {
     this.statusId.set(filters.statusId);
     this.priorityId.set(filters.priorityId);
     this.categoryId.set(filters.categoryId);
-    this.departmentId.set(filters.departmentId);
+    const userDeptId = this.tokenStorage.getDepartmentId();
+    if (userDeptId) {
+      this.departmentId.set(userDeptId);
+    } else {
+      this.departmentId.set(filters.departmentId);
+    }
     this.searchQuery.set(filters.search);
     this.pageSize.set(filters.pageSize);
     this.sortBy.set(filters.sortBy);
@@ -118,12 +126,6 @@ export class MyFiledComplaintsComponent {
     if (page < 1 || page > total) return;
     this.currentPage.set(page);
     this.loadComplaints();
-  }
-
-  raiseComplaint(): void {
-    const role = this.tokenStorage.getRole();
-    const routeRole = role === 'DEPARTMENT_HEAD' ? 'dept-head' : role?.toLowerCase();
-    this.router.navigate([`/${routeRole}/raise-complaint`]);
   }
 
   getComplaintDetailLink(id: number): string[] {
@@ -153,19 +155,15 @@ export class MyFiledComplaintsComponent {
     }
   }
 
-  //getter for pages
+  getEscalationClass(dueAt: string): string {
+    const due = new Date(dueAt).getTime();
+    const now = new Date().getTime();
+    if (due < now) return 'sla-breach';
+    return 'sla-warning';
+  }
+
   get pages(): number[] {
     const total = this.result()?.totalPages ?? 1;
     return Array.from({ length: total }, (_, i) => i + 1);
-  }
-  // based on escalation time(ms) returns style class
-  getEscalationClass(escalationDueAt: string | null): string {
-    if (!escalationDueAt) return '';
-    const due = new Date(escalationDueAt).getTime();
-    const now = Date.now();
-    const diff = due - now;
-    if (diff < 0) return 'escalation-overdue';
-    if (diff < 24 * 60 * 60 * 1000) return 'escalation-warning';
-    return 'escalation-ok';
   }
 }
